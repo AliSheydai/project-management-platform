@@ -44,3 +44,13 @@ class UserResponse(UserBase):
     is_superuser: bool
     created_at: datetime
     updated_at: datetime
+
+
+class UserListResponse(BaseModel):
+    """Paginated user search response."""
+
+    items: list[UserResponse]
+    total: int
+    page: int
+    page_size: int
+    pages: int

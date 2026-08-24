@@ -9,6 +9,7 @@ from app.shared.models import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.modules.auth.models import RefreshToken
+    from app.modules.projects.models import Project, ProjectMember
 
 
 class User(Base, UUIDMixin, TimestampMixin):
@@ -54,6 +55,18 @@ class User(Base, UUIDMixin, TimestampMixin):
         "RefreshToken",
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+    owned_projects: Mapped[list["Project"]] = relationship(
+        "Project",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+        foreign_keys="Project.owner_id",
+    )
+    project_memberships: Mapped[list["ProjectMember"]] = relationship(
+        "ProjectMember",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="ProjectMember.user_id",
     )
 
     def __init__(self, **kwargs):
