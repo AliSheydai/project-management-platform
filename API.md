@@ -572,6 +572,105 @@ Base URL: `/api/v1`
 
 ---
 
+## 🔍 Global Search & Saved Views Endpoints
+
+Base URL: `/api/v1`
+
+### 1. Cross-Project Task Search & Filtering
+* **Method**: `GET`
+* **Path**: `/api/v1/search/tasks`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Query Parameters**:
+  * `q`: Search keyword across titles and descriptions
+  * `project_id`: (Optional) Limit search to specific project UUID
+  * `status`: (Optional, multi-valued) Filter by statuses (`TODO`, `IN_PROGRESS`, etc.)
+  * `priority`: (Optional, multi-valued) Filter by priorities (`LOW`, `MEDIUM`, `HIGH`, `URGENT`)
+  * `assignee_id`: Filter by assigned user UUID
+  * `creator_id`: Filter by creator user UUID
+  * `label_id`: Filter by attached label UUID
+  * `unassigned`: Boolean, filter unassigned tasks only
+  * `due_date_from` / `due_date_to`: ISO-8601 due date range
+  * `created_from` / `created_to`: ISO-8601 creation date range
+  * `sort_by`: `created_at`, `due_date`, `priority`, `title`, `position`
+  * `order`: `asc` or `desc`
+  * `page`, `page_size`: Pagination controls
+* **Response Body**:
+  ```json
+  {
+    "items": [ ... ],
+    "total": 12,
+    "page": 1,
+    "page_size": 20,
+    "pages": 1,
+    "facets": {
+      "status_counts": {
+        "TODO": 4,
+        "IN_PROGRESS": 6,
+        "DONE": 2
+      },
+      "priority_counts": {
+        "HIGH": 8,
+        "MEDIUM": 4
+      }
+    }
+  }
+  ```
+
+---
+
+### 2. Create Saved View
+* **Method**: `POST`
+* **Path**: `/api/v1/saved-views`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `201 Created`
+* **Request Body**:
+  ```json
+  {
+    "name": "Urgent Bugs",
+    "project_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "filters": {
+      "priority": ["HIGH", "URGENT"],
+      "status": ["TODO", "IN_PROGRESS"]
+    },
+    "is_default": true
+  }
+  ```
+* **Response Body**: Returns `SavedViewResponse`.
+
+---
+
+### 3. List Saved Views
+* **Method**: `GET`
+* **Path**: `/api/v1/saved-views?project_id={project_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Response Body**: Returns `SavedViewListResponse`.
+
+---
+
+### 4. Update Saved View
+* **Method**: `PATCH`
+* **Path**: `/api/v1/saved-views/{view_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Request Body**:
+  ```json
+  {
+    "name": "Critical Sprint Tasks",
+    "is_default": false
+  }
+  ```
+
+---
+
+### 5. Delete Saved View
+* **Method**: `DELETE`
+* **Path**: `/api/v1/saved-views/{view_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `204 No Content`
+
+---
+
 ## 🛡 Role-Based Access Control (RBAC) Hierarchy
 
 ```text

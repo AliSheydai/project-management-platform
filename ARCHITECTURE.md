@@ -3,7 +3,7 @@
 ## 1. Architectural Decisions
 
 ### Modular Monolith
-The platform is organized as a modular monolith. Modules (`auth`, `users`, `projects`, `tasks`, `comments`, `labels`, `attachments`, `notifications`, `activity`) are encapsulated with explicit models, schemas, repositories, and API routers. This ensures high velocity during early development while maintaining clean domain boundaries for future microservice extraction if needed.
+The platform is organized as a modular monolith. Modules (`auth`, `users`, `projects`, `tasks`, `comments`, `labels`, `attachments`, `search`, `notifications`, `activity`) are encapsulated with explicit models, schemas, repositories, and API routers. This ensures high velocity during early development while maintaining clean domain boundaries for future microservice extraction if needed.
 
 ### Asynchronous SQLAlchemy 2.0 & Asyncpg
 - **Non-blocking I/O**: Leveraging `asyncpg` and SQLAlchemy's `AsyncEngine`/`AsyncSessionLocal` avoids thread pool saturation during high-throughput I/O.
@@ -20,7 +20,7 @@ The platform is organized as a modular monolith. Modules (`auth`, `users`, `proj
 
 ---
 
-## 2. Entity-Relationship Design (Phase 9 Current State)
+## 2. Entity-Relationship Design (Phase 10 Current State)
 
 ```mermaid
 erDiagram
@@ -37,6 +37,8 @@ erDiagram
     TASKS }o--o{ LABELS : "tagged via task_labels"
     TASKS ||--o{ ATTACHMENTS : "contains"
     USERS ||--o{ ATTACHMENTS : "uploads"
+    USERS ||--o{ SAVED_VIEWS : "owns"
+    PROJECTS ||--o{ SAVED_VIEWS : "scopes (optional)"
     PROJECTS ||--o{ ACTIVITY_LOGS : "tracks"
     TASKS ||--o{ ACTIVITY_LOGS : "logs"
     USERS ||--o{ ACTIVITY_LOGS : "performs"
@@ -117,6 +119,17 @@ erDiagram
         bigint file_size
         string content_type
         datetime created_at "indexed"
+    }
+
+    SAVED_VIEWS {
+        uuid id PK
+        uuid user_id FK "indexed"
+        uuid project_id FK "indexed, nullable"
+        string name
+        json filters
+        boolean is_default
+        datetime created_at
+        datetime updated_at
     }
 
     COMMENTS {

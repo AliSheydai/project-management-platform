@@ -8,6 +8,7 @@ from app.modules.auth.models import RefreshToken
 from app.modules.comments.models import Comment
 from app.modules.labels.models import Label, task_labels
 from app.modules.projects.models import Project, ProjectMember
+from app.modules.search.models import SavedView
 from app.modules.tasks.models import Task, TaskPriority, TaskStatus
 from app.modules.users.models import User
 
@@ -27,4 +28,5 @@ __all__ = [
     "Label",
     "task_labels",
     "Attachment",
+    "SavedView",
 ]
