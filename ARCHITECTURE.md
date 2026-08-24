@@ -3,7 +3,7 @@
 ## 1. Architectural Decisions
 
 ### Modular Monolith
-The platform is organized as a modular monolith. Modules (`auth`, `users`, `projects`, `tasks`, `comments`, `labels`, `notifications`, `activity`) are encapsulated with explicit models, schemas, repositories, and API routers. This ensures high velocity during early development while maintaining clean domain boundaries for future microservice extraction if needed.
+The platform is organized as a modular monolith. Modules (`auth`, `users`, `projects`, `tasks`, `comments`, `labels`, `attachments`, `notifications`, `activity`) are encapsulated with explicit models, schemas, repositories, and API routers. This ensures high velocity during early development while maintaining clean domain boundaries for future microservice extraction if needed.
 
 ### Asynchronous SQLAlchemy 2.0 & Asyncpg
 - **Non-blocking I/O**: Leveraging `asyncpg` and SQLAlchemy's `AsyncEngine`/`AsyncSessionLocal` avoids thread pool saturation during high-throughput I/O.
@@ -20,7 +20,7 @@ The platform is organized as a modular monolith. Modules (`auth`, `users`, `proj
 
 ---
 
-## 2. Entity-Relationship Design (Phase 8 Current State)
+## 2. Entity-Relationship Design (Phase 9 Current State)
 
 ```mermaid
 erDiagram
@@ -35,6 +35,8 @@ erDiagram
     TASKS ||--o{ COMMENTS : "contains"
     USERS ||--o{ COMMENTS : "writes (author)"
     TASKS }o--o{ LABELS : "tagged via task_labels"
+    TASKS ||--o{ ATTACHMENTS : "contains"
+    USERS ||--o{ ATTACHMENTS : "uploads"
     PROJECTS ||--o{ ACTIVITY_LOGS : "tracks"
     TASKS ||--o{ ACTIVITY_LOGS : "logs"
     USERS ||--o{ ACTIVITY_LOGS : "performs"
@@ -104,6 +106,17 @@ erDiagram
         string description
         datetime created_at
         datetime updated_at
+    }
+
+    ATTACHMENTS {
+        uuid id PK
+        uuid task_id FK "indexed"
+        uuid uploader_id FK "indexed"
+        string file_name
+        string file_path
+        bigint file_size
+        string content_type
+        datetime created_at "indexed"
     }
 
     COMMENTS {

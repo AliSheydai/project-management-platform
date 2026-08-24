@@ -40,6 +40,10 @@ class ActivityAction(StrEnum):
     COMMENT_ADDED = "comment:added"
     COMMENT_DELETED = "comment:deleted"
 
+    # Attachment Actions
+    ATTACHMENT_ADDED = "attachment:added"
+    ATTACHMENT_DELETED = "attachment:deleted"
+
 
 class ActivityLog(Base, UUIDMixin):
     """Audit log entry tracking modifications across the workspace."""

@@ -21,6 +21,7 @@ from app.shared.models import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.modules.activity.models import ActivityLog
+    from app.modules.attachments.models import Attachment
     from app.modules.comments.models import Comment
     from app.modules.labels.models import Label
     from app.modules.projects.models import Project
@@ -147,6 +148,11 @@ class Task(Base, UUIDMixin, TimestampMixin):
         "Label",
         secondary=task_labels,
         back_populates="tasks",
+    )
+    attachments: Mapped[list["Attachment"]] = relationship(
+        "Attachment",
+        back_populates="task",
+        cascade="all, delete-orphan",
     )
 
     def __init__(self, **kwargs):

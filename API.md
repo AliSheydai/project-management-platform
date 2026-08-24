@@ -506,6 +506,72 @@ Base URL: `/api/v1`
 
 ---
 
+## 📎 Task Attachments & File Storage Endpoints
+
+Base URL: `/api/v1`
+
+### 1. Upload Task Attachment
+* **Method**: `POST`
+* **Path**: `/api/v1/tasks/{task_id}/attachments`
+* **Headers**: `Authorization: Bearer <access_token>`, `Content-Type: multipart/form-data`
+* **Status**: `201 Created`
+* **Permission**: Requires `TASK_EDIT`, `COMMENT_CREATE`, or task authorship/assignment.
+* **Form Field**: `file` (Binary file, max 25MB). Supported types: images, PDFs, text, zip, docx, json.
+* **Response Body**:
+  ```json
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "task_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "uploader_id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+    "file_name": "design_spec.pdf",
+    "file_size": 1048576,
+    "content_type": "application/pdf",
+    "created_at": "2026-08-24T23:00:00Z",
+    "uploader": {
+      "id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      "email": "user@example.com",
+      "first_name": "Jane",
+      "last_name": "Doe"
+    }
+  }
+  ```
+
+---
+
+### 2. List Task Attachments
+* **Method**: `GET`
+* **Path**: `/api/v1/tasks/{task_id}/attachments`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW`.
+* **Response Body**:
+  ```json
+  {
+    "items": [ ... ],
+    "total": 1
+  }
+  ```
+
+---
+
+### 3. Download Attachment File
+* **Method**: `GET`
+* **Path**: `/api/v1/attachments/{attachment_id}/download`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK` (Streams binary with matching MIME type and `Content-Disposition`)
+* **Permission**: Requires `PROJECT_VIEW`.
+
+---
+
+### 4. Delete Attachment
+* **Method**: `DELETE`
+* **Path**: `/api/v1/attachments/{attachment_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `204 No Content`
+* **Permission**: Attachment uploader, or `TASK_EDIT` (`OWNER` / `ADMIN`).
+
+---
+
 ## 🛡 Role-Based Access Control (RBAC) Hierarchy
 
 ```text

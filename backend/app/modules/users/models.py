@@ -9,6 +9,7 @@ from app.shared.models import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.modules.activity.models import ActivityLog
+    from app.modules.attachments.models import Attachment
     from app.modules.auth.models import RefreshToken
     from app.modules.comments.models import Comment
     from app.modules.projects.models import Project, ProjectMember
@@ -90,6 +91,11 @@ class User(Base, UUIDMixin, TimestampMixin):
     activity_logs: Mapped[list["ActivityLog"]] = relationship(
         "ActivityLog",
         back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    uploaded_attachments: Mapped[list["Attachment"]] = relationship(
+        "Attachment",
+        back_populates="uploader",
         cascade="all, delete-orphan",
     )
 

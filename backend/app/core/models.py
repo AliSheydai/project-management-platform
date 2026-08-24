@@ -3,6 +3,7 @@
 from app.core.database import Base
 from app.core.permissions import ProjectRole
 from app.modules.activity.models import ActivityAction, ActivityLog
+from app.modules.attachments.models import Attachment
 from app.modules.auth.models import RefreshToken
 from app.modules.comments.models import Comment
 from app.modules.labels.models import Label, task_labels
@@ -25,4 +26,5 @@ __all__ = [
     "ActivityAction",
     "Label",
     "task_labels",
+    "Attachment",
 ]

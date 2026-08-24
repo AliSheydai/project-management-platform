@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.activity import router as activity_router
+from app.api.v1.attachments import router as attachments_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.comments import router as comments_router
 from app.api.v1.health import router as health_router
@@ -31,6 +32,9 @@ api_router.include_router(comments_router)
 
 # Task Labels & Tagging endpoints
 api_router.include_router(labels_router)
+
+# Task File Attachments endpoints
+api_router.include_router(attachments_router)
 
 # Activity & Audit log endpoints
 api_router.include_router(activity_router)

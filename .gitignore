@@ -67,3 +67,10 @@ Thumbs.db
 # Docker volume data
 postgres_data/
 redis_data/
+
+# Uploaded Files
+backend/uploads/*
+!backend/uploads/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
