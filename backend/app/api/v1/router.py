@@ -11,6 +11,7 @@ from app.api.v1.projects import router as projects_router
 from app.api.v1.search import router as search_router
 from app.api.v1.tasks import router as tasks_router
 from app.api.v1.users import router as users_router
+from app.api.v1.websockets import router as websockets_router
 
 api_router = APIRouter()
 
@@ -46,3 +47,6 @@ api_router.include_router(notifications_router)
 
 # Activity & Audit log endpoints
 api_router.include_router(activity_router)
+
+# Real-Time WebSocket channels
+api_router.include_router(websockets_router)

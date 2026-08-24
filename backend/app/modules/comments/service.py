@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import NotFoundException
+from app.core.websockets import ws_manager
 from app.modules.activity.models import ActivityAction
 from app.modules.activity.service import record_activity
 from app.modules.comments.models import Comment
@@ -107,7 +108,35 @@ async def create_comment(
         .where(Comment.id == comment.id)
     )
     res = await db.execute(stmt)
-    return res.scalar_one()
+    created_comment = res.scalar_one()
+
+    # Broadcast real-time comment:added event
+    await ws_manager.broadcast_to_project(
+        project_id=task.project_id,
+        event="comment:added",
+        payload={
+            "task_id": str(task_id),
+            "comment": {
+                "id": str(created_comment.id),
+                "task_id": str(created_comment.task_id),
+                "author_id": str(created_comment.author_id),
+                "content": created_comment.content,
+                "created_at": created_comment.created_at.isoformat(),
+                "updated_at": created_comment.updated_at.isoformat(),
+                "author": {
+                    "id": str(created_comment.author.id),
+                    "email": created_comment.author.email,
+                    "first_name": created_comment.author.first_name,
+                    "last_name": created_comment.author.last_name,
+                    "avatar_url": created_comment.author.avatar_url,
+                }
+                if created_comment.author
+                else None,
+            },
+        },
+    )
+
+    return created_comment
 
 
 async def list_task_comments(

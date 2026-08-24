@@ -764,6 +764,33 @@ Base URL: `/api/v1/notifications`
 
 ---
 
+## ⚡ Real-Time WebSockets & Presence Endpoints
+
+Base URL: `/api/v1/ws`
+
+### 1. Project Real-Time Room WebSocket
+* **Protocol**: `WebSocket (WSS)`
+* **Path**: `/api/v1/ws/projects/{project_id}?token={access_token}`
+* **Headers**: `Authorization: Bearer <access_token>` (Alternative to `token` query param)
+* **Access**: Requires active project membership or superuser.
+* **Connection Lifecycle**:
+  1. Authenticates JWT token; closes with code `1008` (Policy Violation) if token is invalid or user is not a project member.
+  2. Dispatches `presence:state` immediately to the connecting client containing list of all online users.
+  3. Broadcasts `presence:joined` to the project room when a user connects.
+  4. Broadcasts `presence:left` when a user closes all active connections to the project room.
+* **Heartbeat**: Client can send `{"action": "ping"}` to receive `{"event": "pong", "payload": {"timestamp": ...}}`.
+* **Standard Real-Time Event Envelope**:
+  ```json
+  {
+    "event": "task:created | task:updated | task:moved | task:deleted | comment:added | presence:state | presence:joined | presence:left",
+    "project_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "payload": { ... },
+    "timestamp": "2026-08-24T23:55:00Z"
+  }
+  ```
+
+---
+
 ## 🛡 Role-Based Access Control (RBAC) Hierarchy
 
 ```text

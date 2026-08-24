@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestException, NotFoundException
+from app.core.websockets import ws_manager
 from app.modules.activity.models import ActivityAction
 from app.modules.activity.service import record_activity
 from app.modules.labels.models import Label, task_labels
@@ -142,7 +143,35 @@ async def create_task(
         .where(Task.id == task.id)
     )
     res = await db.execute(reload_stmt)
-    return res.scalar_one()
+    created_task = res.scalar_one()
+
+    # Broadcast real-time task:created event
+    await ws_manager.broadcast_to_project(
+        project_id=project_id,
+        event="task:created",
+        payload={
+            "task": {
+                "id": str(created_task.id),
+                "project_id": str(created_task.project_id),
+                "title": created_task.title,
+                "description": created_task.description,
+                "status": str(created_task.status),
+                "priority": str(created_task.priority),
+                "assignee_id": str(created_task.assignee_id)
+                if created_task.assignee_id
+                else None,
+                "creator_id": str(created_task.creator_id),
+                "due_date": created_task.due_date.isoformat()
+                if created_task.due_date
+                else None,
+                "position": created_task.position,
+                "created_at": created_task.created_at.isoformat(),
+                "updated_at": created_task.updated_at.isoformat(),
+            }
+        },
+    )
+
+    return created_task
 
 
 async def list_project_tasks(
@@ -427,7 +456,35 @@ async def update_task(
         .where(Task.id == task.id)
     )
     res = await db.execute(stmt)
-    return res.scalar_one()
+    updated_task = res.scalar_one()
+
+    # Broadcast real-time task:updated event
+    await ws_manager.broadcast_to_project(
+        project_id=task.project_id,
+        event="task:updated",
+        payload={
+            "task": {
+                "id": str(updated_task.id),
+                "project_id": str(updated_task.project_id),
+                "title": updated_task.title,
+                "description": updated_task.description,
+                "status": str(updated_task.status),
+                "priority": str(updated_task.priority),
+                "assignee_id": str(updated_task.assignee_id)
+                if updated_task.assignee_id
+                else None,
+                "creator_id": str(updated_task.creator_id),
+                "due_date": updated_task.due_date.isoformat()
+                if updated_task.due_date
+                else None,
+                "position": updated_task.position,
+                "created_at": updated_task.created_at.isoformat(),
+                "updated_at": updated_task.updated_at.isoformat(),
+            }
+        },
+    )
+
+    return updated_task
 
 
 async def delete_task(
@@ -436,19 +493,29 @@ async def delete_task(
     actor_id: uuid.UUID | None = None,
 ) -> None:
     """Permanently delete a task."""
+    project_id = task.project_id
+    task_id = task.id
+
     if actor_id:
         await record_activity(
             db=db,
-            project_id=task.project_id,
+            project_id=project_id,
             user_id=actor_id,
             action=ActivityAction.TASK_DELETED,
             entity_type="task",
-            entity_id=task.id,
-            task_id=task.id,
+            entity_id=task_id,
+            task_id=task_id,
             details={"title": task.title},
         )
     await db.delete(task)
     await db.commit()
+
+    # Broadcast real-time task:deleted event
+    await ws_manager.broadcast_to_project(
+        project_id=project_id,
+        event="task:deleted",
+        payload={"task_id": str(task_id)},
+    )
 
 
 async def reorder_task(
@@ -516,4 +583,32 @@ async def reorder_task(
         .where(Task.id == task.id)
     )
     res = await db.execute(stmt)
-    return res.scalar_one()
+    reordered_task = res.scalar_one()
+
+    # Broadcast real-time task:moved event
+    await ws_manager.broadcast_to_project(
+        project_id=task.project_id,
+        event="task:moved",
+        payload={
+            "task": {
+                "id": str(reordered_task.id),
+                "project_id": str(reordered_task.project_id),
+                "title": reordered_task.title,
+                "description": reordered_task.description,
+                "status": str(reordered_task.status),
+                "priority": str(reordered_task.priority),
+                "assignee_id": str(reordered_task.assignee_id)
+                if reordered_task.assignee_id
+                else None,
+                "creator_id": str(reordered_task.creator_id),
+                "due_date": reordered_task.due_date.isoformat()
+                if reordered_task.due_date
+                else None,
+                "position": reordered_task.position,
+                "created_at": reordered_task.created_at.isoformat(),
+                "updated_at": reordered_task.updated_at.isoformat(),
+            }
+        },
+    )
+
+    return reordered_task
