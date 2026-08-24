@@ -20,7 +20,7 @@ The platform is organized as a modular monolith. Modules (`auth`, `users`, `proj
 
 ---
 
-## 2. Entity-Relationship Design (Phase 10 Current State)
+## 2. Entity-Relationship Design (Phase 11 Current State)
 
 ```mermaid
 erDiagram
@@ -39,6 +39,8 @@ erDiagram
     USERS ||--o{ ATTACHMENTS : "uploads"
     USERS ||--o{ SAVED_VIEWS : "owns"
     PROJECTS ||--o{ SAVED_VIEWS : "scopes (optional)"
+    USERS ||--o{ NOTIFICATIONS : "receives (recipient)"
+    USERS ||--o{ NOTIFICATIONS : "triggers (actor)"
     PROJECTS ||--o{ ACTIVITY_LOGS : "tracks"
     TASKS ||--o{ ACTIVITY_LOGS : "logs"
     USERS ||--o{ ACTIVITY_LOGS : "performs"
@@ -130,6 +132,21 @@ erDiagram
         boolean is_default
         datetime created_at
         datetime updated_at
+    }
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid user_id FK "indexed"
+        uuid actor_id FK "indexed, nullable"
+        string type "indexed"
+        string title
+        text message
+        string entity_type "indexed"
+        uuid entity_id "indexed"
+        json payload
+        boolean is_read "indexed"
+        datetime read_at
+        datetime created_at "indexed"
     }
 
     COMMENTS {

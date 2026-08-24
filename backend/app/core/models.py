@@ -7,6 +7,7 @@ from app.modules.attachments.models import Attachment
 from app.modules.auth.models import RefreshToken
 from app.modules.comments.models import Comment
 from app.modules.labels.models import Label, task_labels
+from app.modules.notifications.models import Notification, NotificationType
 from app.modules.projects.models import Project, ProjectMember
 from app.modules.search.models import SavedView
 from app.modules.tasks.models import Task, TaskPriority, TaskStatus
@@ -29,4 +30,6 @@ __all__ = [
     "task_labels",
     "Attachment",
     "SavedView",
+    "Notification",
+    "NotificationType",
 ]

@@ -6,6 +6,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.comments import router as comments_router
 from app.api.v1.health import router as health_router
 from app.api.v1.labels import router as labels_router
+from app.api.v1.notifications import router as notifications_router
 from app.api.v1.projects import router as projects_router
 from app.api.v1.search import router as search_router
 from app.api.v1.tasks import router as tasks_router
@@ -39,6 +40,9 @@ api_router.include_router(attachments_router)
 
 # Global Search & Saved Views endpoints
 api_router.include_router(search_router)
+
+# In-App Notifications endpoints
+api_router.include_router(notifications_router)
 
 # Activity & Audit log endpoints
 api_router.include_router(activity_router)

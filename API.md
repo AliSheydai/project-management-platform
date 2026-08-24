@@ -671,6 +671,99 @@ Base URL: `/api/v1`
 
 ---
 
+## 🔔 In-App Notifications & Mention Endpoints
+
+Base URL: `/api/v1/notifications`
+
+### 1. List Notifications
+* **Method**: `GET`
+* **Path**: `/api/v1/notifications?unread_only={bool}&page={page}&page_size={page_size}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Response Body**: Returns `NotificationListResponse` with list of notifications and total `unread_count`.
+  ```json
+  {
+    "items": [
+      {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "user_id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+        "actor_id": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+        "type": "task:assigned",
+        "title": "Task assigned to you: Design System",
+        "message": "Alice assigned you to task 'Design System'",
+        "entity_type": "task",
+        "entity_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+        "payload": {
+          "project_id": "4c5d6e7f-8a9b-0c1d-2e3f-4a5b6c7d8e9f",
+          "task_title": "Design System"
+        },
+        "is_read": false,
+        "read_at": null,
+        "created_at": "2026-08-24T23:15:00Z",
+        "actor": {
+          "id": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+          "email": "alice@example.com",
+          "first_name": "Alice",
+          "last_name": "Smith"
+        }
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "pages": 1,
+    "unread_count": 1
+  }
+  ```
+
+---
+
+### 2. Get Unread Count
+* **Method**: `GET`
+* **Path**: `/api/v1/notifications/unread-count`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Response Body**:
+  ```json
+  {
+    "unread_count": 3
+  }
+  ```
+
+---
+
+### 3. Mark Single Notification as Read
+* **Method**: `PATCH`
+* **Path**: `/api/v1/notifications/{notification_id}/read`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Response Body**: Returns updated `NotificationResponse`.
+
+---
+
+### 4. Mark All Notifications as Read
+* **Method**: `POST`
+* **Path**: `/api/v1/notifications/mark-all-read`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Response Body**:
+  ```json
+  {
+    "message": "All notifications marked as read",
+    "updated_count": 4
+  }
+  ```
+
+---
+
+### 5. Delete Notification
+* **Method**: `DELETE`
+* **Path**: `/api/v1/notifications/{notification_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `204 No Content`
+
+---
+
 ## 🛡 Role-Based Access Control (RBAC) Hierarchy
 
 ```text

@@ -15,7 +15,13 @@ from app.modules.comments.schemas import (
     CommentResponse,
     CommentUpdate,
 )
+from app.modules.notifications.models import NotificationType
+from app.modules.notifications.service import (
+    create_notification,
+    parse_and_notify_mentions,
+)
 from app.modules.tasks.models import Task
+from app.modules.users.models import User
 from app.modules.users.schemas import UserResponse
 
 
@@ -52,6 +58,45 @@ async def create_comment(
         task_id=task_id,
         details={"content_preview": comment_in.content[:100]},
     )
+
+    # Fetch author user
+    user_stmt = select(User).where(User.id == author_id)
+    user_res = await db.execute(user_stmt)
+    author = user_res.scalar_one_or_none()
+
+    if author:
+        # Notify task assignee & creator
+        for uid in {task.assignee_id, task.creator_id}:
+            if uid and uid != author_id:
+                await create_notification(
+                    db=db,
+                    user_id=uid,
+                    actor_id=author_id,
+                    notification_type=NotificationType.COMMENT_ADDED,
+                    title=f"New comment on: {task.title}",
+                    message=f"{author.full_name}: '{comment_in.content[:60]}'",
+                    entity_type="comment",
+                    entity_id=comment.id,
+                    payload={
+                        "task_id": str(task_id),
+                        "project_id": str(task.project_id),
+                    },
+                )
+
+        # Parse @mentions
+        await parse_and_notify_mentions(
+            db=db,
+            text=comment_in.content,
+            project_id=task.project_id,
+            actor=author,
+            entity_type="comment",
+            entity_id=comment.id,
+            title=f"Mentioned in comment on '{task.title}'",
+            payload={
+                "task_id": str(task_id),
+                "project_id": str(task.project_id),
+            },
+        )
 
     await db.commit()
 

@@ -33,7 +33,7 @@ router = APIRouter(tags=["Search & Saved Views"])
     response_model=TaskSearchResponse,
     status_code=status.HTTP_200_OK,
     summary="Cross-project task search",
-    description="Search tasks across accessible projects with multi-filters and facets.",
+    description="Search tasks across accessible projects with filters and facets.",
 )
 async def execute_task_search(
     current_user: CurrentActiveUserDep,

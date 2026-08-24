@@ -12,6 +12,8 @@ from app.modules.activity.service import record_activity
 from app.modules.labels.models import Label, task_labels
 from app.modules.labels.schemas import LabelResponse
 from app.modules.labels.service import get_label_by_id
+from app.modules.notifications.models import NotificationType
+from app.modules.notifications.service import create_notification
 from app.modules.projects.models import ProjectMember
 from app.modules.tasks.models import Task, TaskPriority, TaskStatus
 from app.modules.tasks.schemas import (
@@ -112,6 +114,20 @@ async def create_task(
             "priority": str(task.priority),
         },
     )
+
+    # Trigger assignment notification
+    if task.assignee_id and task.assignee_id != creator.id:
+        await create_notification(
+            db=db,
+            user_id=task.assignee_id,
+            actor_id=creator.id,
+            notification_type=NotificationType.TASK_ASSIGNED,
+            title=f"Task assigned to you: {task.title}",
+            message=f"{creator.full_name} assigned you to task '{task.title}'",
+            entity_type="task",
+            entity_id=task.id,
+            payload={"project_id": str(project_id), "task_title": task.title},
+        )
 
     await db.commit()
 
@@ -297,6 +313,23 @@ async def update_task(
                 task_id=task.id,
                 details={"old_status": old_status, "new_status": new_status},
             )
+            for uid in {task.assignee_id, task.creator_id}:
+                if uid and uid != actor_id:
+                    await create_notification(
+                        db=db,
+                        user_id=uid,
+                        actor_id=actor_id,
+                        notification_type=NotificationType.TASK_STATUS_CHANGED,
+                        title=f"Task status updated: {task.title}",
+                        message=f"Task '{task.title}' moved to {new_status}",
+                        entity_type="task",
+                        entity_id=task.id,
+                        payload={
+                            "project_id": str(task.project_id),
+                            "task_title": task.title,
+                            "new_status": str(new_status),
+                        },
+                    )
 
     if task_in.priority is not None and task_in.priority != task.priority:
         changes["priority"] = str(task_in.priority)
@@ -330,6 +363,21 @@ async def update_task(
                 task_id=task.id,
                 details={"assigned_to": str(task.assignee_id)},
             )
+            if task.assignee_id != actor_id:
+                await create_notification(
+                    db=db,
+                    user_id=task.assignee_id,
+                    actor_id=actor_id,
+                    notification_type=NotificationType.TASK_ASSIGNED,
+                    title=f"Task assigned to you: {task.title}",
+                    message=f"You were assigned to task '{task.title}'",
+                    entity_type="task",
+                    entity_id=task.id,
+                    payload={
+                        "project_id": str(task.project_id),
+                        "task_title": task.title,
+                    },
+                )
 
     if task_in.clear_due_date:
         task.due_date = None
@@ -426,6 +474,23 @@ async def reorder_task(
                 task_id=task.id,
                 details={"old_status": old_status, "new_status": new_status},
             )
+            for uid in {task.assignee_id, task.creator_id}:
+                if uid and uid != actor_id:
+                    await create_notification(
+                        db=db,
+                        user_id=uid,
+                        actor_id=actor_id,
+                        notification_type=NotificationType.TASK_STATUS_CHANGED,
+                        title=f"Task status updated: {task.title}",
+                        message=f"Task '{task.title}' moved to {new_status}",
+                        entity_type="task",
+                        entity_id=task.id,
+                        payload={
+                            "project_id": str(task.project_id),
+                            "task_title": task.title,
+                            "new_status": str(new_status),
+                        },
+                    )
 
     if actor_id:
         await record_activity(

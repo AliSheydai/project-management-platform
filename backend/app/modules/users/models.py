@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from app.modules.attachments.models import Attachment
     from app.modules.auth.models import RefreshToken
     from app.modules.comments.models import Comment
+    from app.modules.notifications.models import Notification
     from app.modules.projects.models import Project, ProjectMember
     from app.modules.tasks.models import Task
 
@@ -97,6 +98,12 @@ class User(Base, UUIDMixin, TimestampMixin):
         "Attachment",
         back_populates="uploader",
         cascade="all, delete-orphan",
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
+        back_populates="recipient",
+        cascade="all, delete-orphan",
+        foreign_keys="Notification.user_id",
     )
 
     def __init__(self, **kwargs):
