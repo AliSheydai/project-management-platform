@@ -10,6 +10,7 @@ from app.shared.models import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.modules.activity.models import ActivityLog
+    from app.modules.labels.models import Label
     from app.modules.tasks.models import Task
     from app.modules.users.models import User
 
@@ -58,6 +59,11 @@ class Project(Base, UUIDMixin, TimestampMixin):
     )
     activity_logs: Mapped[list["ActivityLog"]] = relationship(
         "ActivityLog",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    labels: Mapped[list["Label"]] = relationship(
+        "Label",
         back_populates="project",
         cascade="all, delete-orphan",
     )

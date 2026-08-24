@@ -81,6 +81,9 @@ async def list_tasks(
     unassigned: Annotated[
         bool, Query(description="Filter unassigned tasks only")
     ] = False,
+    label_id: Annotated[
+        uuid.UUID | None, Query(description="Filter by attached label UUID")
+    ] = None,
     q: Annotated[
         str | None, Query(description="Search keyword in title or description")
     ] = None,
@@ -108,6 +111,7 @@ async def list_tasks(
         priority=priority,
         assignee_id=assignee_id,
         unassigned=unassigned,
+        label_id=label_id,
         query=q,
         due_date_from=due_date_from,
         due_date_to=due_date_to,

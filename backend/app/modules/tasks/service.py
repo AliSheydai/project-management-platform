@@ -2,13 +2,16 @@ import math
 import uuid
 from datetime import datetime
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, insert, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.modules.activity.models import ActivityAction
 from app.modules.activity.service import record_activity
+from app.modules.labels.models import Label, task_labels
+from app.modules.labels.schemas import LabelResponse
+from app.modules.labels.service import get_label_by_id
 from app.modules.projects.models import ProjectMember
 from app.modules.tasks.models import Task, TaskPriority, TaskStatus
 from app.modules.tasks.schemas import (
@@ -80,9 +83,19 @@ async def create_task(
         creator_id=creator.id,
         due_date=task_in.due_date,
         position=position,
+        custom_fields=task_in.custom_fields,
     )
     db.add(task)
     await db.flush()
+
+    # Attach labels if provided
+    if task_in.label_ids:
+        for lbl_id in task_in.label_ids:
+            lbl = await get_label_by_id(db, lbl_id)
+            if lbl.project_id == project_id:
+                await db.execute(
+                    insert(task_labels).values(task_id=task.id, label_id=lbl.id)
+                )
 
     # Record activity log
     await record_activity(
@@ -105,7 +118,11 @@ async def create_task(
     # Reload with eager loaded relationships
     reload_stmt = (
         select(Task)
-        .options(selectinload(Task.creator), selectinload(Task.assignee))
+        .options(
+            selectinload(Task.creator),
+            selectinload(Task.assignee),
+            selectinload(Task.labels),
+        )
         .where(Task.id == task.id)
     )
     res = await db.execute(reload_stmt)
@@ -119,6 +136,7 @@ async def list_project_tasks(
     priority: TaskPriority | None = None,
     assignee_id: uuid.UUID | None = None,
     unassigned: bool = False,
+    label_id: uuid.UUID | None = None,
     query: str | None = None,
     due_date_from: datetime | None = None,
     due_date_to: datetime | None = None,
@@ -139,6 +157,9 @@ async def list_project_tasks(
     elif assignee_id is not None:
         base_filter.append(Task.assignee_id == assignee_id)
 
+    if label_id is not None:
+        base_filter.append(Task.labels.any(Label.id == label_id))
+
     if query and query.strip():
         search_pattern = f"%{query.strip()}%"
         base_filter.append(
@@ -154,7 +175,7 @@ async def list_project_tasks(
         base_filter.append(Task.due_date <= due_date_to)
 
     # Count total
-    count_stmt = select(func.count(Task.id)).where(*base_filter)
+    count_stmt = select(func.count(Task.id.distinct())).where(*base_filter)
     count_res = await db.execute(count_stmt)
     total = count_res.scalar() or 0
 
@@ -174,7 +195,11 @@ async def list_project_tasks(
     offset = (page - 1) * page_size
     stmt = (
         select(Task)
-        .options(selectinload(Task.creator), selectinload(Task.assignee))
+        .options(
+            selectinload(Task.creator),
+            selectinload(Task.assignee),
+            selectinload(Task.labels),
+        )
         .where(*base_filter)
         .order_by(order_func, Task.created_at.asc())
         .offset(offset)
@@ -195,10 +220,12 @@ async def list_project_tasks(
             creator_id=t.creator_id,
             due_date=t.due_date,
             position=t.position,
+            custom_fields=t.custom_fields,
             created_at=t.created_at,
             updated_at=t.updated_at,
             creator=UserResponse.model_validate(t.creator),
             assignee=UserResponse.model_validate(t.assignee) if t.assignee else None,
+            labels=[LabelResponse.model_validate(lbl) for lbl in t.labels],
         )
         for t in tasks
     ]
@@ -218,12 +245,13 @@ async def get_task_by_id(
     db: AsyncSession,
     task_id: uuid.UUID,
 ) -> Task:
-    """Retrieve task with creator, assignee, and project loaded."""
+    """Retrieve task with creator, assignee, labels, and project loaded."""
     stmt = (
         select(Task)
         .options(
             selectinload(Task.creator),
             selectinload(Task.assignee),
+            selectinload(Task.labels),
             selectinload(Task.project),
         )
         .where(Task.id == task_id)
@@ -311,6 +339,21 @@ async def update_task(
     if task_in.position is not None:
         task.position = task_in.position
 
+    if task_in.custom_fields is not None:
+        task.custom_fields = task_in.custom_fields
+        changes["custom_fields"] = "updated"
+
+    if task_in.label_ids is not None:
+        # Sync labels via task_labels table to prevent async lazyload
+        await db.execute(delete(task_labels).where(task_labels.c.task_id == task.id))
+        for lbl_id in task_in.label_ids:
+            lbl = await get_label_by_id(db, lbl_id)
+            if lbl.project_id == task.project_id:
+                await db.execute(
+                    insert(task_labels).values(task_id=task.id, label_id=lbl.id)
+                )
+        changes["labels"] = "updated"
+
     if changes and actor_id:
         await record_activity(
             db=db,
@@ -328,7 +371,11 @@ async def update_task(
     # Reload
     stmt = (
         select(Task)
-        .options(selectinload(Task.creator), selectinload(Task.assignee))
+        .options(
+            selectinload(Task.creator),
+            selectinload(Task.assignee),
+            selectinload(Task.labels),
+        )
         .where(Task.id == task.id)
     )
     res = await db.execute(stmt)
@@ -396,7 +443,11 @@ async def reorder_task(
 
     stmt = (
         select(Task)
-        .options(selectinload(Task.creator), selectinload(Task.assignee))
+        .options(
+            selectinload(Task.creator),
+            selectinload(Task.assignee),
+            selectinload(Task.labels),
+        )
         .where(Task.id == task.id)
     )
     res = await db.execute(stmt)

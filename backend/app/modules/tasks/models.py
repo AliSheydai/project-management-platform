@@ -1,17 +1,28 @@
 import uuid
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text, Uuid
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    String,
+    Text,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.modules.labels.models import task_labels
 from app.shared.models import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from app.modules.activity.models import ActivityLog
     from app.modules.comments.models import Comment
+    from app.modules.labels.models import Label
     from app.modules.projects.models import Project
     from app.modules.users.models import User
 
@@ -102,6 +113,10 @@ class Task(Base, UUIDMixin, TimestampMixin):
         nullable=False,
         index=True,
     )
+    custom_fields: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
 
     # Relationships
     project: Mapped["Project"] = relationship(
@@ -127,6 +142,11 @@ class Task(Base, UUIDMixin, TimestampMixin):
         "ActivityLog",
         back_populates="task",
         cascade="all, delete-orphan",
+    )
+    labels: Mapped[list["Label"]] = relationship(
+        "Label",
+        secondary=task_labels,
+        back_populates="tasks",
     )
 
     def __init__(self, **kwargs):

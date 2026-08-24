@@ -3,7 +3,7 @@
 ## 1. Architectural Decisions
 
 ### Modular Monolith
-The platform is organized as a modular monolith. Modules (`auth`, `users`, `projects`, `tasks`, `comments`, `notifications`, `activity`) are encapsulated with explicit models, schemas, repositories, and API routers. This ensures high velocity during early development while maintaining clean domain boundaries for future microservice extraction if needed.
+The platform is organized as a modular monolith. Modules (`auth`, `users`, `projects`, `tasks`, `comments`, `labels`, `notifications`, `activity`) are encapsulated with explicit models, schemas, repositories, and API routers. This ensures high velocity during early development while maintaining clean domain boundaries for future microservice extraction if needed.
 
 ### Asynchronous SQLAlchemy 2.0 & Asyncpg
 - **Non-blocking I/O**: Leveraging `asyncpg` and SQLAlchemy's `AsyncEngine`/`AsyncSessionLocal` avoids thread pool saturation during high-throughput I/O.
@@ -20,7 +20,7 @@ The platform is organized as a modular monolith. Modules (`auth`, `users`, `proj
 
 ---
 
-## 2. Entity-Relationship Design (Phase 7 Current State)
+## 2. Entity-Relationship Design (Phase 8 Current State)
 
 ```mermaid
 erDiagram
@@ -29,10 +29,12 @@ erDiagram
     USERS ||--o{ PROJECT_MEMBERS : "has"
     PROJECTS ||--o{ PROJECT_MEMBERS : "contains"
     PROJECTS ||--o{ TASKS : "contains"
+    PROJECTS ||--o{ LABELS : "defines"
     USERS ||--o{ TASKS : "creates (creator)"
     USERS ||--o{ TASKS : "assigned (assignee)"
     TASKS ||--o{ COMMENTS : "contains"
     USERS ||--o{ COMMENTS : "writes (author)"
+    TASKS }o--o{ LABELS : "tagged via task_labels"
     PROJECTS ||--o{ ACTIVITY_LOGS : "tracks"
     TASKS ||--o{ ACTIVITY_LOGS : "logs"
     USERS ||--o{ ACTIVITY_LOGS : "performs"
@@ -89,6 +91,17 @@ erDiagram
         uuid creator_id FK "indexed"
         datetime due_date "indexed"
         float position "indexed"
+        json custom_fields
+        datetime created_at
+        datetime updated_at
+    }
+
+    LABELS {
+        uuid id PK
+        uuid project_id FK "indexed"
+        string name "indexed"
+        string color
+        string description
         datetime created_at
         datetime updated_at
     }

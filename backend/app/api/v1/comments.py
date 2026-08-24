@@ -118,7 +118,9 @@ async def remove_comment(
     if not current_user.is_superuser and comment.author_id != current_user.id:
         if not has_permission(member.role, Permission.COMMENT_DELETE):
             raise ForbiddenException(
-                message="Action requires COMMENT_DELETE permission or comment authorship."
+                message=(
+                    "Action requires COMMENT_DELETE permission or comment authorship."
+                )
             )
 
     await delete_comment(db, comment, actor_id=current_user.id)

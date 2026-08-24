@@ -431,6 +431,81 @@ Base URL: `/api/v1`
 
 ---
 
+## 🏷 Task Labels & Metadata Endpoints
+
+Base URL: `/api/v1`
+
+### 1. Create Project Label
+* **Method**: `POST`
+* **Path**: `/api/v1/projects/{project_id}/labels`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `201 Created`
+* **Permission**: Requires `PROJECT_EDIT` (`OWNER`, `ADMIN`).
+* **Request Body**:
+  ```json
+  {
+    "name": "Backend",
+    "color": "#8B5CF6",
+    "description": "Server-side and database tasks"
+  }
+  ```
+* **Response Body**: Returns `LabelResponse`.
+
+---
+
+### 2. List Project Labels
+* **Method**: `GET`
+* **Path**: `/api/v1/projects/{project_id}/labels`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW`.
+* **Response Body**: Returns `LabelListResponse`.
+
+---
+
+### 3. Update Label
+* **Method**: `PATCH`
+* **Path**: `/api/v1/labels/{label_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_EDIT`.
+* **Request Body**:
+  ```json
+  {
+    "name": "Core Backend",
+    "color": "#6D28D9"
+  }
+  ```
+
+---
+
+### 4. Delete Label
+* **Method**: `DELETE`
+* **Path**: `/api/v1/labels/{label_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `204 No Content`
+* **Permission**: Requires `PROJECT_EDIT`.
+
+---
+
+### 5. Attach Label to Task
+* **Method**: `POST`
+* **Path**: `/api/v1/tasks/{task_id}/labels/{label_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `TASK_EDIT`.
+
+---
+
+### 6. Detach Label from Task
+* **Method**: `DELETE`
+* **Path**: `/api/v1/tasks/{task_id}/labels/{label_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `TASK_EDIT`.
+
+---
+
 ## 🛡 Role-Based Access Control (RBAC) Hierarchy
 
 ```text

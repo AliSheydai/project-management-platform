@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.modules.labels.schemas import LabelResponse
 from app.modules.tasks.models import TaskPriority, TaskStatus
 from app.modules.users.schemas import UserResponse
 
@@ -15,6 +17,7 @@ class TaskBase(BaseModel):
     status: TaskStatus = TaskStatus.TODO
     priority: TaskPriority = TaskPriority.MEDIUM
     due_date: datetime | None = None
+    custom_fields: dict[str, Any] | None = None
 
 
 class TaskCreate(TaskBase):
@@ -22,6 +25,7 @@ class TaskCreate(TaskBase):
 
     assignee_id: uuid.UUID | None = None
     position: float | None = None
+    label_ids: list[uuid.UUID] | None = None
 
 
 class TaskUpdate(BaseModel):
@@ -36,6 +40,8 @@ class TaskUpdate(BaseModel):
     due_date: datetime | None = None
     clear_due_date: bool = False
     position: float | None = None
+    custom_fields: dict[str, Any] | None = None
+    label_ids: list[uuid.UUID] | None = None
 
 
 class TaskResponse(TaskBase):
@@ -52,6 +58,7 @@ class TaskResponse(TaskBase):
     updated_at: datetime
     creator: UserResponse
     assignee: UserResponse | None = None
+    labels: list[LabelResponse] = []
 
 
 class TaskListResponse(BaseModel):

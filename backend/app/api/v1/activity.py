@@ -22,7 +22,7 @@ router = APIRouter(tags=["Activity & Audit Logs"])
     response_model=ActivityListResponse,
     status_code=status.HTTP_200_OK,
     summary="Get project activity log",
-    description="Retrieve paginated activity logs for a project. Requires PROJECT_VIEW.",
+    description="Retrieve paginated activity logs for a project.",
 )
 async def get_project_activity_feed(
     project_id: Annotated[uuid.UUID, Path(description="Project UUID")],
@@ -41,7 +41,7 @@ async def get_project_activity_feed(
     response_model=ActivityListResponse,
     status_code=status.HTTP_200_OK,
     summary="Get task activity history",
-    description="Retrieve paginated activity history for a task. Requires PROJECT_VIEW.",
+    description="Retrieve paginated activity history for a task.",
 )
 async def get_task_activity_history(
     task_id: Annotated[uuid.UUID, Path(description="Task UUID")],
