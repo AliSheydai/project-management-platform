@@ -22,29 +22,7 @@ Base URL: `/api/v1/auth`
     "avatar_url": "https://example.com/avatar.png"
   }
   ```
-* **Response Body**:
-  ```json
-  {
-    "tokens": {
-      "access_token": "eyJhbGciOi...",
-      "refresh_token": "kG9a...",
-      "token_type": "bearer",
-      "expires_in": 1800
-    },
-    "user": {
-      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      "email": "user@example.com",
-      "first_name": "Jane",
-      "last_name": "Doe",
-      "full_name": "Jane Doe",
-      "avatar_url": "https://example.com/avatar.png",
-      "is_active": true,
-      "is_superuser": false,
-      "created_at": "2026-08-24T22:00:00Z",
-      "updated_at": "2026-08-24T22:00:00Z"
-    }
-  }
-  ```
+* **Response Body**: Returns `AuthResponse` with JWT token pair and safe `user` profile.
 
 ---
 
@@ -159,19 +137,47 @@ Base URL: `/api/v1/users`
 * **Path**: `/api/v1/users?q={query}&page={page}&page_size={page_size}`
 * **Headers**: `Authorization: Bearer <access_token>`
 * **Status**: `200 OK`
+* **Response Body**: Returns `UserListResponse` with pagination metadata.
+
+---
+
+## 📁 Projects & Workspace Endpoints
+
+Base URL: `/api/v1/projects`
+
+### 1. Create Project
+* **Method**: `POST`
+* **Path**: `/api/v1/projects`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `201 Created`
+* **Request Body**:
+  ```json
+  {
+    "name": "Design System Redesign",
+    "description": "Standardize UI component library and styling"
+  }
+  ```
+* **Response Body**: Returns `ProjectResponse` with `current_user_role: "OWNER"`.
+
+---
+
+### 2. List Projects
+* **Method**: `GET`
+* **Path**: `/api/v1/projects?q={query}&is_archived={bool}&page={page}&page_size={page_size}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
 * **Response Body**:
   ```json
   {
     "items": [
       {
-        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        "email": "user@example.com",
-        "first_name": "Jane",
-        "last_name": "Doe",
-        "full_name": "Jane Doe",
-        "avatar_url": "https://example.com/avatar.png",
-        "is_active": true,
-        "is_superuser": false,
+        "id": "7b0b6c6b-f418-4bf8-92c2-8fe26778ba72",
+        "name": "Design System Redesign",
+        "description": "Standardize UI component library",
+        "owner_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "is_archived": false,
+        "current_user_role": "OWNER",
+        "members_count": 4,
         "created_at": "2026-08-24T22:00:00Z",
         "updated_at": "2026-08-24T22:00:00Z"
       }
@@ -185,9 +191,99 @@ Base URL: `/api/v1/users`
 
 ---
 
-## 🛡 Role-Based Access Control (RBAC) Hierarchy
+### 3. Get Project Detail
+* **Method**: `GET`
+* **Path**: `/api/v1/projects/{project_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW` (all members).
+* **Response Body**: Returns `ProjectDetailResponse` with complete `owner` profile and `members` array.
 
-The platform implements strict server-side authorization:
+---
+
+### 4. Update Project
+* **Method**: `PATCH`
+* **Path**: `/api/v1/projects/{project_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_EDIT` (`OWNER` or `ADMIN`).
+* **Request Body**:
+  ```json
+  {
+    "name": "Design System v2",
+    "description": "Updated roadmap description",
+    "is_archived": false
+  }
+  ```
+
+---
+
+### 5. Delete Project
+* **Method**: `DELETE`
+* **Path**: `/api/v1/projects/{project_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `204 No Content`
+* **Permission**: Requires `PROJECT_DELETE` (`OWNER` only).
+
+---
+
+### 6. List Project Members
+* **Method**: `GET`
+* **Path**: `/api/v1/projects/{project_id}/members`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW`.
+* **Response Body**: Array of `ProjectMemberResponse` objects.
+
+---
+
+### 7. Add / Invite Project Member
+* **Method**: `POST`
+* **Path**: `/api/v1/projects/{project_id}/members`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `201 Created`
+* **Permission**: Requires `MEMBER_INVITE` (`OWNER` or `ADMIN`).
+* **Request Body**:
+  ```json
+  {
+    "email": "colleague@example.com",
+    "role": "MEMBER"
+  }
+  ```
+
+---
+
+### 8. Update Member Role
+* **Method**: `PATCH`
+* **Path**: `/api/v1/projects/{project_id}/members/{user_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `MEMBER_ROLE_CHANGE` (`OWNER` only).
+* **Request Body**:
+  ```json
+  {
+    "role": "ADMIN"
+  }
+  ```
+
+---
+
+### 9. Remove Member or Leave Project
+* **Method**: `DELETE`
+* **Path**: `/api/v1/projects/{project_id}/members/{user_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Self-removal (leaving) or `MEMBER_REMOVE` (`OWNER` or `ADMIN`).
+* **Response Body**:
+  ```json
+  {
+    "message": "Member removed successfully"
+  }
+  ```
+
+---
+
+## 🛡 Role-Based Access Control (RBAC) Hierarchy
 
 ```text
 OWNER (Rank 40)
@@ -199,7 +295,7 @@ OWNER (Rank 40)
 
 ADMIN (Rank 30)
  ├── Manage project & settings
- ├── Invite & remove members
+ ├── Invite & remove members (cannot remove owners or admins)
  ├── Create, edit, delete tasks
  └── Add / delete comments
 
@@ -216,8 +312,6 @@ VIEWER (Rank 10)
 ---
 
 ## ⚠️ Standard Error Format
-
-All error responses strictly adhere to the unified schema:
 
 ```json
 {
