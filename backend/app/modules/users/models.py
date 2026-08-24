@@ -8,7 +8,9 @@ from app.core.database import Base
 from app.shared.models import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
+    from app.modules.activity.models import ActivityLog
     from app.modules.auth.models import RefreshToken
+    from app.modules.comments.models import Comment
     from app.modules.projects.models import Project, ProjectMember
     from app.modules.tasks.models import Task
 
@@ -79,6 +81,16 @@ class User(Base, UUIDMixin, TimestampMixin):
         "Task",
         back_populates="assignee",
         foreign_keys="Task.assignee_id",
+    )
+    comments: Mapped[list["Comment"]] = relationship(
+        "Comment",
+        back_populates="author",
+        cascade="all, delete-orphan",
+    )
+    activity_logs: Mapped[list["ActivityLog"]] = relationship(
+        "ActivityLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
 
     def __init__(self, **kwargs):

@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 
+from app.api.v1.activity import router as activity_router
 from app.api.v1.auth import router as auth_router
+from app.api.v1.comments import router as comments_router
 from app.api.v1.health import router as health_router
 from app.api.v1.projects import router as projects_router
 from app.api.v1.tasks import router as tasks_router
@@ -22,3 +24,9 @@ api_router.include_router(projects_router)
 
 # Task & Workflow endpoints
 api_router.include_router(tasks_router)
+
+# Collaboration Comments endpoints
+api_router.include_router(comments_router)
+
+# Activity & Audit log endpoints
+api_router.include_router(activity_router)

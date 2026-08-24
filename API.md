@@ -352,6 +352,85 @@ Base URL: `/api/v1`
 
 ---
 
+## 💬 Collaboration Comments Endpoints
+
+Base URL: `/api/v1`
+
+### 1. Add Comment to Task
+* **Method**: `POST`
+* **Path**: `/api/v1/tasks/{task_id}/comments`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `201 Created`
+* **Permission**: Requires `COMMENT_CREATE` (`OWNER`, `ADMIN`, `MEMBER`).
+* **Request Body**:
+  ```json
+  {
+    "content": "Updated design tokens according to modern guidelines."
+  }
+  ```
+* **Response Body**: Returns `CommentResponse` with populated `author` profile.
+
+---
+
+### 2. List Task Comments
+* **Method**: `GET`
+* **Path**: `/api/v1/tasks/{task_id}/comments?page={page}&page_size={page_size}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW` (all project members).
+* **Response Body**: Returns `CommentListResponse`.
+
+---
+
+### 3. Edit Comment
+* **Method**: `PATCH`
+* **Path**: `/api/v1/comments/{comment_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Restricted to comment author.
+* **Request Body**:
+  ```json
+  {
+    "content": "Edited comment text content"
+  }
+  ```
+* **Response Body**: Returns updated `CommentResponse`.
+
+---
+
+### 4. Delete Comment
+* **Method**: `DELETE`
+* **Path**: `/api/v1/comments/{comment_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `204 No Content`
+* **Permission**: Comment author, or `COMMENT_DELETE` (`OWNER` / `ADMIN`).
+
+---
+
+## 📜 Activity Feed & Audit Log Endpoints
+
+Base URL: `/api/v1`
+
+### 1. Get Project Activity Log
+* **Method**: `GET`
+* **Path**: `/api/v1/projects/{project_id}/activity?page={page}&page_size={page_size}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW`.
+* **Response Body**: Returns `ActivityListResponse` containing workspace audit trail entries.
+
+---
+
+### 2. Get Task Activity History
+* **Method**: `GET`
+* **Path**: `/api/v1/tasks/{task_id}/activity?page={page}&page_size={page_size}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW`.
+* **Response Body**: Returns `ActivityListResponse` for the task.
+
+---
+
 ## 🛡 Role-Based Access Control (RBAC) Hierarchy
 
 ```text
@@ -360,19 +439,20 @@ OWNER (Rank 40)
  ├── Invite & remove members
  ├── Change member roles
  ├── Create, edit, delete tasks
+ ├── Add / delete all comments
  └── Delete project
 
 ADMIN (Rank 30)
  ├── Manage project & settings
  ├── Invite & remove members (cannot remove owners or admins)
  ├── Create, edit, delete tasks
- └── Add / delete comments
+ └── Add / delete all comments
 
 MEMBER (Rank 20)
  ├── View project & tasks
  ├── Create tasks
  ├── Edit assigned tasks
- └── Add comments
+ └── Add comments (and edit/delete own comments)
 
 VIEWER (Rank 10)
  └── Read-only access to project & tasks

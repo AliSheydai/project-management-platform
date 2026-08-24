@@ -163,7 +163,7 @@ async def patch_task(
                     message="You do not have permission to edit this task."
                 )
 
-    return await update_task(db, task, task_in)
+    return await update_task(db, task, task_in, actor_id=current_user.id)
 
 
 @router.delete(
@@ -187,7 +187,7 @@ async def remove_task(
                 message="Action requires TASK_DELETE permission (OWNER or ADMIN)."
             )
 
-    await delete_task(db, task)
+    await delete_task(db, task, actor_id=current_user.id)
 
 
 @router.patch(
@@ -213,4 +213,4 @@ async def reorder_board_task(
                 message="Action requires TASK_EDIT permission to reorder tasks."
             )
 
-    return await reorder_task(db, task, reorder_in)
+    return await reorder_task(db, task, reorder_in, actor_id=current_user.id)

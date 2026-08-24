@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestException, NotFoundException
+from app.modules.activity.models import ActivityAction
+from app.modules.activity.service import record_activity
 from app.modules.projects.models import ProjectMember
 from app.modules.tasks.models import Task, TaskPriority, TaskStatus
 from app.modules.tasks.schemas import (
@@ -80,6 +82,24 @@ async def create_task(
         position=position,
     )
     db.add(task)
+    await db.flush()
+
+    # Record activity log
+    await record_activity(
+        db=db,
+        project_id=project_id,
+        user_id=creator.id,
+        action=ActivityAction.TASK_CREATED,
+        entity_type="task",
+        entity_id=task.id,
+        task_id=task.id,
+        details={
+            "title": task.title,
+            "status": str(task.status),
+            "priority": str(task.priority),
+        },
+    )
+
     await db.commit()
 
     # Reload with eager loaded relationships
@@ -219,22 +239,69 @@ async def update_task(
     db: AsyncSession,
     task: Task,
     task_in: TaskUpdate,
+    actor_id: uuid.UUID | None = None,
 ) -> Task:
-    """Update task fields and enforce membership validation on assignee change."""
-    if task_in.title is not None:
+    """Update task fields and record audit activity."""
+    changes: dict[str, str] = {}
+
+    if task_in.title is not None and task_in.title.strip() != task.title:
+        changes["title"] = task_in.title.strip()
         task.title = task_in.title.strip()
+
     if task_in.description is not None:
-        task.description = task_in.description.strip() if task_in.description else None
-    if task_in.status is not None:
+        desc_val = task_in.description.strip() if task_in.description else None
+        if desc_val != task.description:
+            changes["description"] = "updated"
+            task.description = desc_val
+
+    if task_in.status is not None and task_in.status != task.status:
+        old_status = str(task.status)
+        new_status = str(task_in.status)
         task.status = task_in.status
-    if task_in.priority is not None:
+        if actor_id:
+            await record_activity(
+                db=db,
+                project_id=task.project_id,
+                user_id=actor_id,
+                action=ActivityAction.TASK_STATUS_CHANGED,
+                entity_type="task",
+                entity_id=task.id,
+                task_id=task.id,
+                details={"old_status": old_status, "new_status": new_status},
+            )
+
+    if task_in.priority is not None and task_in.priority != task.priority:
+        changes["priority"] = str(task_in.priority)
         task.priority = task_in.priority
 
     if task_in.unassign:
-        task.assignee_id = None
+        if task.assignee_id is not None:
+            task.assignee_id = None
+            if actor_id:
+                await record_activity(
+                    db=db,
+                    project_id=task.project_id,
+                    user_id=actor_id,
+                    action=ActivityAction.TASK_ASSIGNED,
+                    entity_type="task",
+                    entity_id=task.id,
+                    task_id=task.id,
+                    details={"assigned_to": None},
+                )
     elif task_in.assignee_id is not None and task_in.assignee_id != task.assignee_id:
         await validate_assignee_membership(db, task.project_id, task_in.assignee_id)
         task.assignee_id = task_in.assignee_id
+        if actor_id:
+            await record_activity(
+                db=db,
+                project_id=task.project_id,
+                user_id=actor_id,
+                action=ActivityAction.TASK_ASSIGNED,
+                entity_type="task",
+                entity_id=task.id,
+                task_id=task.id,
+                details={"assigned_to": str(task.assignee_id)},
+            )
 
     if task_in.clear_due_date:
         task.due_date = None
@@ -243,6 +310,18 @@ async def update_task(
 
     if task_in.position is not None:
         task.position = task_in.position
+
+    if changes and actor_id:
+        await record_activity(
+            db=db,
+            project_id=task.project_id,
+            user_id=actor_id,
+            action=ActivityAction.TASK_UPDATED,
+            entity_type="task",
+            entity_id=task.id,
+            task_id=task.id,
+            details=changes,
+        )
 
     await db.commit()
 
@@ -259,8 +338,20 @@ async def update_task(
 async def delete_task(
     db: AsyncSession,
     task: Task,
+    actor_id: uuid.UUID | None = None,
 ) -> None:
     """Permanently delete a task."""
+    if actor_id:
+        await record_activity(
+            db=db,
+            project_id=task.project_id,
+            user_id=actor_id,
+            action=ActivityAction.TASK_DELETED,
+            entity_type="task",
+            entity_id=task.id,
+            task_id=task.id,
+            details={"title": task.title},
+        )
     await db.delete(task)
     await db.commit()
 
@@ -269,11 +360,37 @@ async def reorder_task(
     db: AsyncSession,
     task: Task,
     reorder_in: TaskReorderRequest,
+    actor_id: uuid.UUID | None = None,
 ) -> Task:
     """Update board position and workflow status of a task."""
     task.position = reorder_in.position
-    if reorder_in.status is not None:
+    if reorder_in.status is not None and reorder_in.status != task.status:
+        old_status = str(task.status)
+        new_status = str(reorder_in.status)
         task.status = reorder_in.status
+        if actor_id:
+            await record_activity(
+                db=db,
+                project_id=task.project_id,
+                user_id=actor_id,
+                action=ActivityAction.TASK_STATUS_CHANGED,
+                entity_type="task",
+                entity_id=task.id,
+                task_id=task.id,
+                details={"old_status": old_status, "new_status": new_status},
+            )
+
+    if actor_id:
+        await record_activity(
+            db=db,
+            project_id=task.project_id,
+            user_id=actor_id,
+            action=ActivityAction.TASK_REORDERED,
+            entity_type="task",
+            entity_id=task.id,
+            task_id=task.id,
+            details={"position": task.position},
+        )
 
     await db.commit()
 

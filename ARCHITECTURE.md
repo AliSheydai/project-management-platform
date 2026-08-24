@@ -11,7 +11,7 @@ The platform is organized as a modular monolith. Modules (`auth`, `users`, `proj
 - **Mixins**: `UUIDMixin` and `TimestampMixin` standardise primary keys and audit timestamps across all entities.
 
 ### Role-Based Access Control (RBAC)
-- **Granular Permissions Matrix**: Roles (`OWNER`, `ADMIN`, `MEMBER`, `VIEWER`) are mapped to explicit permissions (`PROJECT_VIEW`, `PROJECT_EDIT`, `TASK_CREATE`, etc.) in `app/core/permissions.py`.
+- **Granular Permissions Matrix**: Roles (`OWNER`, `ADMIN`, `MEMBER`, `VIEWER`) are mapped to explicit permissions (`PROJECT_VIEW`, `PROJECT_EDIT`, `TASK_CREATE`, `COMMENT_CREATE`, etc.) in `app/core/permissions.py`.
 - **FastAPI Dependency Factories**: Permissions are verified before endpoint handlers are invoked using `require_project_permission(permission)` and `require_project_role(role)`.
 
 ### Migration Strategy (Alembic)
@@ -20,7 +20,7 @@ The platform is organized as a modular monolith. Modules (`auth`, `users`, `proj
 
 ---
 
-## 2. Entity-Relationship Design (Phase 6 Current State)
+## 2. Entity-Relationship Design (Phase 7 Current State)
 
 ```mermaid
 erDiagram
@@ -31,6 +31,11 @@ erDiagram
     PROJECTS ||--o{ TASKS : "contains"
     USERS ||--o{ TASKS : "creates (creator)"
     USERS ||--o{ TASKS : "assigned (assignee)"
+    TASKS ||--o{ COMMENTS : "contains"
+    USERS ||--o{ COMMENTS : "writes (author)"
+    PROJECTS ||--o{ ACTIVITY_LOGS : "tracks"
+    TASKS ||--o{ ACTIVITY_LOGS : "logs"
+    USERS ||--o{ ACTIVITY_LOGS : "performs"
     
     USERS {
         uuid id PK
@@ -86,5 +91,26 @@ erDiagram
         float position "indexed"
         datetime created_at
         datetime updated_at
+    }
+
+    COMMENTS {
+        uuid id PK
+        uuid task_id FK "indexed"
+        uuid author_id FK "indexed"
+        text content
+        datetime created_at "indexed"
+        datetime updated_at
+    }
+
+    ACTIVITY_LOGS {
+        uuid id PK
+        uuid project_id FK "indexed"
+        uuid task_id FK "indexed, nullable"
+        uuid user_id FK "indexed"
+        string action "indexed"
+        string entity_type "indexed"
+        uuid entity_id "indexed"
+        json details
+        datetime created_at "indexed"
     }
 ```

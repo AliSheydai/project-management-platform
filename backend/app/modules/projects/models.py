@@ -9,6 +9,7 @@ from app.core.permissions import ProjectRole
 from app.shared.models import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
+    from app.modules.activity.models import ActivityLog
     from app.modules.tasks.models import Task
     from app.modules.users.models import User
 
@@ -52,6 +53,11 @@ class Project(Base, UUIDMixin, TimestampMixin):
     )
     tasks: Mapped[list["Task"]] = relationship(
         "Task",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    activity_logs: Mapped[list["ActivityLog"]] = relationship(
+        "ActivityLog",
         back_populates="project",
         cascade="all, delete-orphan",
     )
