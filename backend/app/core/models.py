@@ -4,6 +4,7 @@ from app.core.database import Base
 from app.core.permissions import ProjectRole
 from app.modules.auth.models import RefreshToken
 from app.modules.projects.models import Project, ProjectMember
+from app.modules.tasks.models import Task, TaskPriority, TaskStatus
 from app.modules.users.models import User
 
 __all__ = [
@@ -13,4 +14,7 @@ __all__ = [
     "Project",
     "ProjectMember",
     "ProjectRole",
+    "Task",
+    "TaskStatus",
+    "TaskPriority",
 ]

@@ -10,6 +10,7 @@ from app.shared.models import TimestampMixin, UUIDMixin
 if TYPE_CHECKING:
     from app.modules.auth.models import RefreshToken
     from app.modules.projects.models import Project, ProjectMember
+    from app.modules.tasks.models import Task
 
 
 class User(Base, UUIDMixin, TimestampMixin):
@@ -67,6 +68,17 @@ class User(Base, UUIDMixin, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",
         foreign_keys="ProjectMember.user_id",
+    )
+    created_tasks: Mapped[list["Task"]] = relationship(
+        "Task",
+        back_populates="creator",
+        cascade="all, delete-orphan",
+        foreign_keys="Task.creator_id",
+    )
+    assigned_tasks: Mapped[list["Task"]] = relationship(
+        "Task",
+        back_populates="assignee",
+        foreign_keys="Task.assignee_id",
     )
 
     def __init__(self, **kwargs):

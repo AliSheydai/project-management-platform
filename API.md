@@ -166,28 +166,7 @@ Base URL: `/api/v1/projects`
 * **Path**: `/api/v1/projects?q={query}&is_archived={bool}&page={page}&page_size={page_size}`
 * **Headers**: `Authorization: Bearer <access_token>`
 * **Status**: `200 OK`
-* **Response Body**:
-  ```json
-  {
-    "items": [
-      {
-        "id": "7b0b6c6b-f418-4bf8-92c2-8fe26778ba72",
-        "name": "Design System Redesign",
-        "description": "Standardize UI component library",
-        "owner_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        "is_archived": false,
-        "current_user_role": "OWNER",
-        "members_count": 4,
-        "created_at": "2026-08-24T22:00:00Z",
-        "updated_at": "2026-08-24T22:00:00Z"
-      }
-    ],
-    "total": 1,
-    "page": 1,
-    "page_size": 20,
-    "pages": 1
-  }
-  ```
+* **Response Body**: Returns `ProjectListResponse`.
 
 ---
 
@@ -283,6 +262,96 @@ Base URL: `/api/v1/projects`
 
 ---
 
+## 📋 Tasks & Workflow Endpoints
+
+Base URL: `/api/v1`
+
+### 1. Create Task in Project
+* **Method**: `POST`
+* **Path**: `/api/v1/projects/{project_id}/tasks`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `201 Created`
+* **Permission**: Requires `TASK_CREATE` (`OWNER`, `ADMIN`, `MEMBER`).
+* **Request Body**:
+  ```json
+  {
+    "title": "Build Navigation Component",
+    "description": "Responsive navbar with RTL support",
+    "status": "TODO",
+    "priority": "HIGH",
+    "assignee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "due_date": "2026-09-01T12:00:00Z"
+  }
+  ```
+* **Response Body**: Returns `TaskResponse` with loaded `creator` and `assignee`.
+
+---
+
+### 2. List & Filter Project Tasks
+* **Method**: `GET`
+* **Path**: `/api/v1/projects/{project_id}/tasks?status={status}&priority={priority}&assignee_id={uuid}&unassigned={bool}&q={search}&sort_by={col}&order={asc|desc}&page={page}&page_size={size}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW` (all project members).
+* **Response Body**: Returns `TaskListResponse` with pagination metadata.
+
+---
+
+### 3. Get Task Details
+* **Method**: `GET`
+* **Path**: `/api/v1/tasks/{task_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `PROJECT_VIEW` on task's project.
+* **Response Body**: Returns `TaskResponse`.
+
+---
+
+### 4. Update Task
+* **Method**: `PATCH`
+* **Path**: `/api/v1/tasks/{task_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `TASK_EDIT` (`OWNER`, `ADMIN`, or task assignee / creator `MEMBER`).
+* **Request Body**:
+  ```json
+  {
+    "title": "Updated Task Title",
+    "status": "IN_PROGRESS",
+    "priority": "URGENT",
+    "assignee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  }
+  ```
+* **Response Body**: Returns updated `TaskResponse`.
+
+---
+
+### 5. Reorder Task on Kanban / Board
+* **Method**: `PATCH`
+* **Path**: `/api/v1/tasks/{task_id}/reorder`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `200 OK`
+* **Permission**: Requires `TASK_EDIT`.
+* **Request Body**:
+  ```json
+  {
+    "position": 2500.0,
+    "status": "DONE"
+  }
+  ```
+* **Response Body**: Returns updated `TaskResponse`.
+
+---
+
+### 6. Delete Task
+* **Method**: `DELETE`
+* **Path**: `/api/v1/tasks/{task_id}`
+* **Headers**: `Authorization: Bearer <access_token>`
+* **Status**: `204 No Content`
+* **Permission**: Requires `TASK_DELETE` (`OWNER` or `ADMIN`).
+
+---
+
 ## 🛡 Role-Based Access Control (RBAC) Hierarchy
 
 ```text
@@ -317,7 +386,7 @@ VIEWER (Rank 10)
 {
   "error": {
     "code": "PERMISSION_DENIED",
-    "message": "Action requires 'project:edit' permission, but your project role is 'VIEWER'.",
+    "message": "Action requires 'task:create' permission, but your project role is 'VIEWER'.",
     "details": null
   }
 }

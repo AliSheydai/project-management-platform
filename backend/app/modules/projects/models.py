@@ -9,6 +9,7 @@ from app.core.permissions import ProjectRole
 from app.shared.models import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
+    from app.modules.tasks.models import Task
     from app.modules.users.models import User
 
 
@@ -46,6 +47,11 @@ class Project(Base, UUIDMixin, TimestampMixin):
     )
     members: Mapped[list["ProjectMember"]] = relationship(
         "ProjectMember",
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    tasks: Mapped[list["Task"]] = relationship(
+        "Task",
         back_populates="project",
         cascade="all, delete-orphan",
     )

@@ -20,7 +20,7 @@ The platform is organized as a modular monolith. Modules (`auth`, `users`, `proj
 
 ---
 
-## 2. Entity-Relationship Design (Phase 4 Current State)
+## 2. Entity-Relationship Design (Phase 6 Current State)
 
 ```mermaid
 erDiagram
@@ -28,6 +28,9 @@ erDiagram
     USERS ||--o{ PROJECTS : "owns (as owner)"
     USERS ||--o{ PROJECT_MEMBERS : "has"
     PROJECTS ||--o{ PROJECT_MEMBERS : "contains"
+    PROJECTS ||--o{ TASKS : "contains"
+    USERS ||--o{ TASKS : "creates (creator)"
+    USERS ||--o{ TASKS : "assigned (assignee)"
     
     USERS {
         uuid id PK
@@ -66,6 +69,21 @@ erDiagram
         uuid project_id FK "indexed"
         uuid user_id FK "indexed"
         string role "indexed"
+        datetime created_at
+        datetime updated_at
+    }
+
+    TASKS {
+        uuid id PK
+        uuid project_id FK "indexed"
+        string title "indexed"
+        text description
+        string status "indexed"
+        string priority "indexed"
+        uuid assignee_id FK "indexed"
+        uuid creator_id FK "indexed"
+        datetime due_date "indexed"
+        float position "indexed"
         datetime created_at
         datetime updated_at
     }
