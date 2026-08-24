@@ -248,6 +248,7 @@ async def test_deactivated_user_login_and_access(
 ) -> None:
     """Test that deactivated users cannot login or access protected routes."""
     from sqlalchemy import select
+
     from app.core.security import create_access_token
     from app.modules.users.models import User
 
@@ -290,6 +291,7 @@ async def test_auth_token_nonexistent_user(
 ) -> None:
     """Test accessing protected route with token of non-existent user."""
     import uuid
+
     from app.core.security import create_access_token
 
     fake_user_id = uuid.uuid4()
@@ -300,4 +302,3 @@ async def test_auth_token_nonexistent_user(
     )
     assert me_res.status_code == 401
     assert me_res.json()["error"]["code"] == "UNAUTHORIZED"
-
