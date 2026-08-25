@@ -56,3 +56,13 @@ async def check_db_health() -> bool:
     except Exception as e:
         logger.error("PostgreSQL health check failed: %s", e)
         return False
+
+
+async def close_db_engine() -> None:
+    """Dispose of the global SQLAlchemy async engine."""
+    await engine.dispose()
+    logger.info("SQLAlchemy async engine disposed.")
+
+
+# Alias for worker session factory
+async_session_factory = AsyncSessionLocal

@@ -14,13 +14,21 @@ The platform is organized as a modular monolith. Modules (`auth`, `users`, `proj
 - **Granular Permissions Matrix**: Roles (`OWNER`, `ADMIN`, `MEMBER`, `VIEWER`) are mapped to explicit permissions (`PROJECT_VIEW`, `PROJECT_EDIT`, `TASK_CREATE`, `COMMENT_CREATE`, etc.) in `app/core/permissions.py`.
 - **FastAPI Dependency Factories**: Permissions are verified before endpoint handlers are invoked using `require_project_permission(permission)` and `require_project_role(role)`.
 
+### Real-Time WebSocket Engine & Presence
+- **ConnectionManager**: In-memory connection tracker supporting project rooms, client heartbeat ping/pongs, and active presence state (`presence:state`, `presence:joined`, `presence:left`).
+- **Redis Pub/Sub Layer**: Multi-worker broadcast bridge ensuring messages and presence events are synchronized across horizontally scaled backend nodes.
+
+### Background Jobs & Task Queue (ARQ / Redis)
+- **Asynchronous Processing**: `app.core.queue.enqueue_job` offloads time-consuming tasks (email sending, token cleanup, metrics aggregations) to ARQ background workers with retry policies and exponential backoffs.
+- **Graceful Fallback**: When Redis is temporarily unavailable in offline/test configurations, `enqueue_job` falls back gracefully without breaking HTTP request workflows.
+
 ### Migration Strategy (Alembic)
 - Alembic is configured in `alembic/env.py` to use async engine and dynamically read connection settings from `app.core.config.settings`.
 - Models are centralized in `app.core.models` to allow automatic schema detection (`Base.metadata`) and migration generation.
 
 ---
 
-## 2. Entity-Relationship Design (Phase 11 Current State)
+## 2. Entity-Relationship Design (Phase 13 Current State)
 
 ```mermaid
 erDiagram

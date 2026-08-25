@@ -10,6 +10,7 @@ from app.core.exceptions import (
     ForbiddenException,
     UnauthorizedException,
 )
+from app.core.queue import enqueue_job
 from app.core.security import (
     create_access_token,
     generate_refresh_token,
@@ -84,6 +85,15 @@ async def register_user(
     await db.refresh(new_user)
 
     tokens = await create_tokens_for_user(db, new_user)
+
+    # Enqueue welcome email in background
+    await enqueue_job(
+        "send_email_job",
+        to_email=new_user.email,
+        template="welcome",
+        context={"name": new_user.first_name},
+    )
+
     return tokens, new_user
 
 
