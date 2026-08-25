@@ -178,3 +178,28 @@ erDiagram
         datetime created_at "indexed"
     }
 ```
+
+---
+
+## 3. Rate Limiting & Security Hardening (Phase 14 Current State)
+
+### SlowAPI & Rate Limiting Strategy
+- **IP & User Key Extractors**: `get_client_ip` inspects `X-Forwarded-For`, `X-Real-IP`, and socket client host with RFC1918 safety. `get_user_or_ip_key` scopes rate limits to authenticated user IDs when available, falling back to client IP for unauthenticated routes.
+- **Dual-Mode Limiter Backend**: `create_limiter` uses Redis connection URL with an instantaneous 200ms ping timeout, falling back automatically to in-memory `memory://` storage with `swallow_errors=True` for resilient zero-downtime execution.
+- **Endpoint Throttling**:
+  - `/api/v1/auth/login`: `5/minute` (Brute-force credential stuffing mitigation)
+  - `/api/v1/auth/register`: `10/hour` (Account creation spam prevention)
+  - `/api/v1/auth/refresh`: `20/minute` (Token abuse protection)
+  - `/api/v1/tasks/{task_id}/attachments`: `15/minute` (Storage exhaustion prevention)
+- **Standard 429 Payload**: Centralized exception handler emits structured RFC-compliant JSON responses with `Retry-After: 60` headers.
+
+### Security Headers Middleware
+- `X-Content-Type-Options: nosniff` (MIME sniffing prevention)
+- `X-Frame-Options: DENY` (Clickjacking prevention)
+- `X-XSS-Protection: 1; mode=block` (Legacy browser XSS filtering)
+- `Referrer-Policy: strict-origin-when-cross-origin` (Referrer leakage protection)
+- `Permissions-Policy: geolocation=(), microphone=(), camera=()` (Sensor restriction)
+- `Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; ...` (Content isolation)
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains` (Enforced when `ENVIRONMENT != "development"`)
+- `CORS Expose Headers`: `Content-Disposition`, `X-Request-ID`, `Retry-After` exposed to frontend clients.
+

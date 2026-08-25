@@ -75,6 +75,22 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]
+    CORS_EXPOSE_HEADERS: list[str] = [
+        "Retry-After",
+        "X-Total-Count",
+        "Content-Disposition",
+    ]
+
+    # Rate Limiting (SlowAPI / Redis)
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_DEFAULT: str = "100/minute"
+    RATE_LIMIT_AUTH_LOGIN: str = "5/minute"
+    RATE_LIMIT_AUTH_REGISTER: str = "10/hour"
+    RATE_LIMIT_AUTH_REFRESH: str = "30/minute"
+    RATE_LIMIT_ATTACHMENTS_UPLOAD: str = "20/minute"
+
+    # Security Headers
+    SECURITY_HEADERS_ENABLED: bool = True
 
 
 settings = Settings()

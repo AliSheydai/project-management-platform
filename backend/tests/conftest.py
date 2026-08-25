@@ -8,7 +8,19 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.database import Base, get_db
 from app.core.models import *  # noqa: F403 Ensure all models registered in Base.metadata
+from app.core.rate_limit import limiter
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def disable_rate_limiting():
+    """Disable global rate limiting by default during test runs
+    to prevent test throttling.
+    """
+    previous_state = limiter.enabled
+    limiter.enabled = False
+    yield
+    limiter.enabled = previous_state
 
 
 @event.listens_for(Engine, "connect")

@@ -10,6 +10,8 @@ from app.core.config import settings
 from app.core.database import engine
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import logger, setup_logging
+from app.core.middleware import SecurityHeadersMiddleware
+from app.core.rate_limit import limiter
 from app.core.redis import close_redis_pool, get_redis_pool
 
 
@@ -47,8 +49,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Attach SlowAPI limiter state
+app.state.limiter = limiter
+
 # Exception handlers
 register_exception_handlers(app)
+
+# Security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS middleware
 if settings.CORS_ORIGINS:
@@ -58,7 +66,9 @@ if settings.CORS_ORIGINS:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=settings.CORS_EXPOSE_HEADERS,
     )
+
 
 # Root-level health endpoints (as requested by specification: /health & /health/ready)
 app.include_router(health_router)

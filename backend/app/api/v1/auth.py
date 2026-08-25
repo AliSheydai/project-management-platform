@@ -1,9 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.modules.auth.dependencies import CurrentActiveUserDep
 from app.modules.auth.schemas import (
     AuthResponse,
@@ -35,7 +37,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
         "authentication tokens with user profile."
     ),
 )
+@limiter.limit(settings.RATE_LIMIT_AUTH_REGISTER)
 async def register(
+    request: Request,
     register_in: RegisterRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AuthResponse:
@@ -57,7 +61,9 @@ async def register(
         "JWT access token and refresh token."
     ),
 )
+@limiter.limit(settings.RATE_LIMIT_AUTH_LOGIN)
 async def login(
+    request: Request,
     login_in: LoginRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AuthResponse:
@@ -79,7 +85,9 @@ async def login(
         "access and refresh token pair."
     ),
 )
+@limiter.limit(settings.RATE_LIMIT_AUTH_REFRESH)
 async def refresh(
+    request: Request,
     refresh_in: RefreshTokenRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TokenResponse:

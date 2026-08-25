@@ -1,13 +1,15 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Path, UploadFile, status
+from fastapi import APIRouter, Depends, File, Path, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.core.permissions import Permission, has_permission
+from app.core.rate_limit import limiter
 from app.modules.attachments.schemas import (
     AttachmentListResponse,
     AttachmentResponse,
@@ -34,7 +36,9 @@ router = APIRouter(tags=["Attachments"])
     summary="Upload task attachment",
     description="Upload a file attachment to a task.",
 )
+@limiter.limit(settings.RATE_LIMIT_ATTACHMENTS_UPLOAD)
 async def upload_attachment(
+    request: Request,
     task_id: Annotated[uuid.UUID, Path(description="Task UUID")],
     file: Annotated[UploadFile, File(description="File to upload")],
     current_user: CurrentActiveUserDep,
