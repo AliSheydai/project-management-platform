@@ -1,4 +1,5 @@
 import logging
+import logging.config as logging_config_module
 import sys
 
 from app.core.config import settings
@@ -55,7 +56,7 @@ def setup_logging() -> None:
         },
     }
 
-    logging.config.dictConfig(logging_config)  # type: ignore[attr-defined]
+    logging_config_module.dictConfig(logging_config)
 
 
 logger = logging.getLogger("app")
