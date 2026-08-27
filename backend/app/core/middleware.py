@@ -38,15 +38,28 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
         # Content Security Policy (allows Swagger UI / OpenAPI assets & websockets)
-        csp_directives = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "img-src 'self' data: https:; "
-            "font-src 'self' data:; "
-            "connect-src 'self' ws: wss: http: https:; "
-            "frame-ancestors 'none'"
-        )
+        # Docs pages need broader connect-src so Swagger can load openapi.json.
+        path = request.url.path
+        if path.startswith(("/docs", "/redoc", "/openapi.json")):
+            csp_directives = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https:; "
+                "font-src 'self' data: https://cdn.jsdelivr.net; "
+                "connect-src 'self' https: http: ws: wss:; "
+                "frame-ancestors 'none'"
+            )
+        else:
+            csp_directives = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https:; "
+                "font-src 'self' data:; "
+                "connect-src 'self' ws: wss: http: https:; "
+                "frame-ancestors 'none'"
+            )
         response.headers["Content-Security-Policy"] = csp_directives
 
         # Strict Transport Security (HSTS) for HTTPS / Production environments

@@ -1,561 +1,508 @@
-# Project Management Platform
+# 🚀 Project Management Platform
 
-A full-stack, production-grade Project Management Platform inspired by tools like Linear, Trello, and Jira. Built with a modular monolith architecture, real-time collaboration via WebSockets, role-based access control, and a modern React frontend.
+A production-oriented **Project Management Platform** built with **Python, FastAPI, PostgreSQL, Redis, and Docker**, with a modern **Next.js** frontend.
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [API Reference](#api-reference)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Security](#security)
+The project was designed to go beyond a simple CRUD application and demonstrate practical backend engineering concepts including **RESTful API design, authentication, authorization, database modeling, ORM, caching, background processing, containerization, testing, and microservice-oriented architecture**.
 
 ---
 
-## Overview
+## ✨ Overview
 
-This platform enables teams to manage projects, tasks, and collaboration in real time. It supports:
+This project is a collaborative project management platform where users can create and manage projects, organize tasks, collaborate with team members, communicate through comments, and receive notifications.
 
-- Multi-project workspaces with role-based member management
-- Kanban board with drag-and-drop task reordering
-- Real-time presence and event broadcasting via WebSockets
-- Background job processing for emails, cleanup, and analytics
-- A responsive, RTL-aware frontend with dark mode support
+The main goal of the project was to build a backend system that resembles the architecture and engineering practices used in real-world production applications.
+
+The frontend provides a modern SaaS-style interface, while the backend exposes a versioned REST API consumed by the frontend.
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
-The system follows a **modular monolith** design. Backend modules are encapsulated with explicit models, schemas, services, and API routers. This ensures high development velocity while maintaining clean domain boundaries for future microservice extraction.
+The project follows a layered backend architecture designed to keep business logic, API concerns, and data access separated.
 
-```
-                         ┌─────────────────────┐
-                         │      Next.js        │
-                         │   React 19 Frontend │
-                         └──────────┬──────────┘
-                                    │
-                                    │ HTTP / REST + WebSocket
-                                    ▼
-                         ┌─────────────────────┐
-                         │      FastAPI        │
-                         │   Backend API       │
-                         └──────────┬──────────┘
-                                    │
-               ┌────────────────────┼────────────────────┐
-               │                    │                    │
-               ▼                    ▼                    ▼
-        ┌─────────────┐      ┌─────────────┐     ┌─────────────┐
-        │ PostgreSQL  │      │    Redis    │     │  ARQ Worker │
-        │  Database   │      │ Cache/PubSub│     │ Background  │
-        └─────────────┘      └─────────────┘     └─────────────┘
+```text
+                        ┌─────────────────────┐
+                        │      Next.js        │
+                        │      Frontend       │
+                        └──────────┬──────────┘
+                                   │
+                              REST API
+                                   │
+                        ┌──────────▼──────────┐
+                        │      FastAPI        │
+                        │      API Layer      │
+                        └──────────┬──────────┘
+                                   │
+                  ┌────────────────┼────────────────┐
+                  │                │                │
+           ┌──────▼─────┐   ┌──────▼─────┐   ┌─────▼──────┐
+           │ PostgreSQL │   │   Redis     │   │ Background │
+           │  Database  │   │   Cache     │   │   Worker   │
+           └────────────┘   └────────────┘   └────────────┘
 ```
 
-### Key Architectural Decisions
+The backend is organized around clear responsibilities:
 
-- **Asynchronous I/O**: Full async stack with SQLAlchemy 2.0 `AsyncEngine` + `asyncpg` for non-blocking database access
-- **RBAC**: Granular permission matrix with 4 roles (OWNER, ADMIN, MEMBER, VIEWER) and 14 distinct permissions
-- **Real-Time**: WebSocket `ConnectionManager` with project rooms, presence tracking, and Redis Pub/Sub for multi-worker broadcast
-- **Background Jobs**: ARQ task queue with Redis backend for email sending, session cleanup, and activity aggregation
-- **Rate Limiting**: SlowAPI with Redis-backed storage and automatic in-memory fallback
-- **Security Headers**: CSP, HSTS, X-Frame-Options, and more injected via custom middleware
+```text
+API
+ ↓
+Services
+ ↓
+Repositories / Data Access
+ ↓
+Database
+```
+
+This separation makes the codebase easier to test, maintain, and extend.
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### Backend
 
-| Technology | Purpose |
-|---|---|
-| **Python 3.12** | Runtime |
-| **FastAPI** | Async web framework with automatic OpenAPI docs |
-| **SQLAlchemy 2.0** | Async ORM with declarative mapped columns |
-| **asyncpg** | High-performance async PostgreSQL driver |
-| **Alembic** | Database migration management |
-| **PostgreSQL 16** | Primary relational database |
-| **Redis 7** | Caching, Pub/Sub, rate limit storage, job queue |
-| **ARQ** | Async background job worker with retry policies |
-| **PyJWT** | JWT token generation and verification |
-| **Passlib + bcrypt** | Password hashing |
-| **SlowAPI** | Rate limiting middleware |
-| **Pydantic v2** | Data validation and settings management |
-| **Uvicorn** | ASGI server |
-| **Docker** | Containerization |
+* **Python**
+* **FastAPI**
+* **SQLAlchemy**
+* **PostgreSQL**
+* **Redis**
+* **Pydantic**
+* **Alembic**
+* **JWT Authentication**
+* **Docker / Docker Compose**
+* **Pytest**
 
 ### Frontend
 
-| Technology | Purpose |
-|---|---|
-| **Next.js 16** | React framework with App Router |
-| **React 19** | UI library |
-| **TypeScript** | Type-safe development |
-| **Tailwind CSS 4** | Utility-first styling |
-| **shadcn/ui** | Accessible component library (61 UI components) |
-| **TanStack React Query** | Server state management and caching |
-| **Zustand** | Client-side state management (auth store) |
-| **Axios** | HTTP client with automatic token refresh |
-| **Zod** | Schema validation |
-| **React Hook Form** | Form management |
-| **Recharts** | Dashboard charts and analytics |
-| **Motion (Framer Motion)** | Animations |
-| **date-fns + date-fns-jalali** | Date formatting (Gregorian + Jalali/Shamsi) |
-| **Lucide React** | Icon library |
-| **Sonner** | Toast notifications |
-| **Vitest** | Unit testing |
-
-### DevOps & Infrastructure
-
-| Technology | Purpose |
-|---|---|
-| **Docker Compose** | Multi-service local development |
-| **Multi-stage Dockerfiles** | Optimized production images |
-| **Vercel** | Frontend deployment (configured) |
-| **Ruff** | Python linting and formatting |
-| **ESLint** | TypeScript/React linting |
+* **Next.js**
+* **React**
+* **TypeScript**
+* **Tailwind CSS**
+* **shadcn/ui**
+* **TanStack Query**
+* **React Hook Form**
+* **Zod**
+* **Motion / Framer Motion**
 
 ---
 
-## Features
+## 🔐 Authentication & Authorization
 
-### Authentication & Sessions
-- User registration with email/password
-- JWT-based authentication with access + refresh token pair
-- Token rotation (refresh token invalidated on each use)
-- Automatic token refresh on the client with request queuing
-- Session storage in `sessionStorage` (XSS-safe vs localStorage)
-- Server-side session cleanup via background worker
+The application implements authentication using JWT-based access and refresh tokens.
 
-### Projects & Workspaces
-- Create, update, archive, and delete projects
-- Invite members by email with role assignment
-- Role management (OWNER, ADMIN, MEMBER, VIEWER)
-- Member removal and self-leave functionality
-- Project overview with statistics
+The authentication system includes:
 
-### Tasks & Kanban
-- Create, update, delete tasks with title, description, status, priority, assignee, due date
-- Kanban board with 5 columns: BACKLOG, TODO, IN_PROGRESS, IN_REVIEW, DONE
-- Drag-and-drop task reordering with optimistic updates
-- Task detail sheet with full editing capabilities
-- Task filtering by status, priority, assignee, and search query
-- Task sorting by multiple fields
+* User registration
+* Login
+* Logout
+* Access tokens
+* Refresh tokens
+* Protected endpoints
+* Current-user endpoint
+* Password hashing
+* Authentication middleware/dependencies
 
-### Labels & Metadata
-- Create colored labels per project
-- Attach/detach labels to tasks
-- Label-based filtering in search
+The platform also implements **role-based access control (RBAC)**.
 
-### Comments & Collaboration
-- Add, edit, delete comments on tasks
-- Comment authorship tracking
-- Activity feed per project and per task
+Supported project roles include:
 
-### File Attachments
-- Upload files up to 25MB per task
-- Support for images, PDFs, text, zip, docx, JSON
-- Download and delete attachments
-- Storage abstraction layer
-
-### Search & Saved Views
-- Cross-project task search with full-text query
-- Multi-filter support (status, priority, assignee, date ranges)
-- Faceted search results with count breakdowns
-- Save and manage custom filter views
-
-### Notifications
-- In-app notification system
-- Notification types: task assigned, status changed, comment added, user mentioned, project invited
-- Unread count badge
-- Mark single/all as read
-- Real-time delivery via WebSocket
-
-### Real-Time & Presence
-- WebSocket connections per project room
-- Live presence: who is online in each project
-- Real-time event broadcasting: task created/updated/moved/deleted, comment added
-- Heartbeat ping/pong for connection health
-- Redis Pub/Sub for multi-worker synchronization
-
-### Dashboard
-- Project overview with task distribution charts
-- Activity statistics
-- Quick access to recent projects
-
-### Settings & Profile
-- Update user profile (name, avatar, password)
-- Appearance settings (theme switching)
-- Dark mode support
-
-### Internationalization
-- RTL (Right-to-Left) layout support for Persian/Farsi
-- Jalali (Shamsi) calendar integration
-- Persian number formatting
-- Localized toast messages
-
----
-
-## Project Structure
-
+```text
+OWNER
+ADMIN
+MEMBER
+VIEWER
 ```
-project-management/
-├── backend/                          # Python FastAPI backend
+
+Authorization is enforced on the backend, while the frontend provides role-aware UI for a better user experience.
+
+---
+
+## 📋 Project Management
+
+Users can create and manage projects and collaborate with other users.
+
+Project functionality includes:
+
+* Create project
+* Update project
+* Delete project
+* View project details
+* Project status
+* Project members
+* Project progress
+* Activity tracking
+
+---
+
+## ✅ Task Management
+
+Tasks are the core operational entity of the platform.
+
+Each task can contain:
+
+* Title
+* Description
+* Status
+* Priority
+* Assignee
+* Creator
+* Due date
+* Creation/update timestamps
+
+Supported task statuses include:
+
+```text
+TODO
+IN_PROGRESS
+IN_REVIEW
+DONE
+CANCELLED
+```
+
+The frontend provides both list-oriented task management and a Kanban-style workflow.
+
+Additional functionality includes:
+
+* Task filtering
+* Search
+* Sorting
+* Pagination
+* Task assignment
+* Status updates
+* Priority management
+* Task details
+* Optimistic UI interactions
+
+---
+
+## 💬 Collaboration
+
+The platform includes collaboration features such as:
+
+### Comments
+
+Users can:
+
+* Add comments
+* Edit their comments
+* Delete their comments
+
+### Project Members
+
+Project owners/admins can:
+
+* Invite members
+* Assign roles
+* Remove members
+* Manage project access
+
+### Activity Feed
+
+Important project actions are represented through an activity timeline.
+
+---
+
+## 🔔 Notifications
+
+The application includes a notification system for important events such as:
+
+* Task assignment
+* Project invitations
+* Task status changes
+* Comments
+* Mentions
+
+Users can:
+
+* View notifications
+* Track unread notifications
+* Mark notifications as read
+* Mark all notifications as read
+
+---
+
+## ⚡ Redis & Caching
+
+Redis is used as an infrastructure component for use cases such as:
+
+* Caching
+* Temporary data
+* Rate limiting
+* Background task coordination
+
+The caching layer is designed so that frequently accessed data does not unnecessarily hit PostgreSQL.
+
+Cache invalidation is handled when relevant resources are modified.
+
+---
+
+## 🐳 Docker
+
+The project is containerized to provide a consistent development and deployment environment.
+
+The local environment can run the main infrastructure through Docker Compose:
+
+```text
+┌─────────────────┐
+│    Frontend     │
+│    Next.js      │
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│    Backend      │
+│    FastAPI      │
+└──────┬─────┬────┘
+       │     │
+ ┌─────▼─┐ ┌─▼─────┐
+ │Postgres│ │ Redis │
+ └────────┘ └───────┘
+```
+
+This makes the development environment reproducible and reduces environment-specific issues.
+
+---
+
+## 🧪 Testing
+
+Testing is an important part of the project.
+
+The backend includes tests for areas such as:
+
+* Authentication
+* Authorization
+* API endpoints
+* Validation
+* Database interactions
+* Business logic
+* Error handling
+
+Frontend testing covers important user flows and UI behavior.
+
+The goal is not simply high test coverage, but confidence in critical application behavior.
+
+---
+
+## 🛡️ API Design
+
+The backend exposes a versioned REST API:
+
+```text
+/api/v1/
+```
+
+The API follows REST-oriented principles and uses appropriate HTTP methods and status codes.
+
+Example resources include:
+
+```text
+/api/v1/auth
+/api/v1/users
+/api/v1/projects
+/api/v1/tasks
+/api/v1/comments
+/api/v1/notifications
+```
+
+The API also provides structured error responses so that the frontend can display meaningful feedback to users.
+
+---
+
+## 🎨 Frontend
+
+The frontend was designed as a modern SaaS product rather than a basic CRUD interface.
+
+It includes:
+
+* Responsive design
+* RTL support
+* Persian UI
+* Dark mode
+* Accessible components
+* Loading states
+* Empty states
+* Error states
+* Toast notifications
+* Micro-interactions
+* Smooth animations
+* Responsive navigation
+* Project dashboards
+* Task management
+* Kanban workflow
+
+The frontend communicates exclusively with the backend API for application data.
+
+---
+
+## 📊 Key Engineering Concepts Demonstrated
+
+This project focuses on practical software engineering concepts including:
+
+* RESTful API design
+* Clean architecture
+* Layered architecture
+* Authentication
+* JWT
+* Role-Based Access Control
+* PostgreSQL
+* ORM
+* Database relationships
+* Database migrations
+* Validation
+* Error handling
+* Pagination
+* Filtering
+* Search
+* Redis caching
+* Rate limiting
+* Background processing
+* Docker
+* Automated testing
+* API documentation
+* Frontend/backend separation
+* Responsive UI
+* Microservice-oriented architecture
+
+---
+
+## 📁 High-Level Structure
+
+```text
+project-management-platform/
+│
+├── backend/
 │   ├── app/
-│   │   ├── api/v1/                   # API route handlers
-│   │   │   ├── auth.py               # Authentication endpoints
-│   │   │   ├── users.py              # User profile endpoints
-│   │   │   ├── projects.py           # Project CRUD + members
-│   │   │   ├── tasks.py              # Task CRUD + reorder
-│   │   │   ├── comments.py           # Comment endpoints
-│   │   │   ├── labels.py             # Label management
-│   │   │   ├── attachments.py        # File upload/download
-│   │   │   ├── search.py             # Global search + saved views
-│   │   │   ├── notifications.py      # Notification endpoints
-│   │   │   ├── activity.py           # Activity log endpoints
-│   │   │   ├── websockets.py         # WebSocket connection endpoint
-│   │   │   ├── health.py             # Health check endpoints
-│   │   │   └── router.py             # Central API router
-│   │   ├── core/                     # Shared infrastructure
-│   │   │   ├── config.py             # Pydantic settings
-│   │   │   ├── database.py           # Async SQLAlchemy engine
-│   │   │   ├── security.py           # JWT + password utilities
-│   │   │   ├── permissions.py        # RBAC roles & permission matrix
-│   │   │   ├── dependencies.py       # FastAPI dependency factories
-│   │   │   ├── websockets.py         # ConnectionManager + presence
-│   │   │   ├── redis.py              # Redis connection pool
-│   │   │   ├── queue.py              # ARQ job queue client
-│   │   │   ├── rate_limit.py         # SlowAPI rate limiter
-│   │   │   ├── middleware.py         # Security headers middleware
-│   │   │   ├── exceptions.py         # Global exception handlers
-│   │   │   ├── logging.py            # Structured logging setup
-│   │   │   └── models.py             # Base model imports
-│   │   ├── modules/                  # Domain modules
-│   │   │   ├── auth/                 # Auth models, schemas, service
-│   │   │   ├── users/                # User models, schemas, service
-│   │   │   ├── projects/             # Project + member management
-│   │   │   ├── tasks/                # Task models, schemas, service
-│   │   │   ├── comments/             # Comment models, schemas, service
-│   │   │   ├── labels/               # Label models, schemas, service
-│   │   │   ├── attachments/          # Attachment + storage service
-│   │   │   ├── search/               # Search + saved views
-│   │   │   ├── notifications/        # Notification models + service
-│   │   │   └── activity/             # Activity log models + service
-│   │   ├── shared/
-│   │   │   └── models.py             # UUIDMixin, TimestampMixin
-│   │   ├── workers/
-│   │   │   ├── runner.py             # ARQ worker entry point
-│   │   │   └── email.py              # Email rendering + sending
-│   │   └── main.py                   # FastAPI application factory
-│   ├── alembic/                      # Database migrations
-│   │   ├── env.py                    # Async migration environment
-│   │   └── versions/                 # Migration scripts
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── repositories/
+│   │   └── workers/
+│   │
 │   ├── tests/
-│   │   ├── api/                      # API endpoint tests (15 files)
-│   │   ├── unit/                     # Unit tests (7 files)
-│   │   └── integration/              # Integration tests
-│   ├── uploads/                      # File upload storage
-│   ├── pyproject.toml                # Python project config
-│   ├── requirements.txt              # Pinned dependencies
-│   ├── Dockerfile                    # Backend container
-│   └── Dockerfile.worker             # Worker container
+│   ├── alembic/
+│   ├── Dockerfile
+│   └── requirements.txt
 │
-├── frontend/                         # Next.js React frontend
-│   ├── src/
-│   │   ├── app/                      # Next.js App Router
-│   │   │   ├── (auth)/               # Auth route group
-│   │   │   │   ├── login/            # Login page
-│   │   │   │   └── register/         # Register page
-│   │   │   ├── (app)/                # Protected route group
-│   │   │   │   ├── dashboard/        # Dashboard page
-│   │   │   │   ├── projects/         # Projects list + detail
-│   │   │   │   │   └── [projectId]/  # Dynamic project routes
-│   │   │   │   │       ├── overview/ # Project overview
-│   │   │   │   │       ├── tasks/    # Kanban board
-│   │   │   │   │       ├── members/  # Member management
-│   │   │   │   │       └── activity/ # Activity feed
-│   │   │   │   ├── notifications/    # Notifications page
-│   │   │   │   └── settings/         # User settings
-│   │   │   ├── layout.tsx            # Root layout
-│   │   │   └── globals.css           # Global styles
-│   │   ├── components/               # React components
-│   │   │   ├── ui/                   # 61 shadcn/ui components
-│   │   │   ├── layout/               # AppShell, Sidebar, TopBar
-│   │   │   ├── auth/                 # LoginForm, RegisterForm
-│   │   │   ├── tasks/                # KanbanBoard, TaskDetailSheet
-│   │   │   ├── projects/             # ProjectList, ProjectOverview
-│   │   │   ├── dashboard/            # DashboardView
-│   │   │   ├── members/              # MembersView
-│   │   │   ├── activity/             # ActivityView
-│   │   │   ├── notifications/        # NotificationsView
-│   │   │   ├── settings/             # ProfileForm, AppearanceForm
-│   │   │   └── shared/               # Reusable components
-│   │   ├── features/                 # Feature-specific hooks
-│   │   │   ├── tasks/hooks.ts        # Task React Query hooks
-│   │   │   ├── projects/hooks.ts     # Project React Query hooks
-│   │   │   ├── comments/             # Comment hooks
-│   │   │   ├── notifications/        # Notification hooks
-│   │   │   └── users/                # User hooks
-│   │   ├── lib/                      # Utilities and services
-│   │   │   ├── api/                  # API client modules (14 files)
-│   │   │   ├── auth/                 # Token store + Zustand session
-│   │   │   ├── supabase/             # Supabase SSR client
-│   │   │   ├── validations/          # Zod schemas
-│   │   │   ├── constants/            # App constants
-│   │   │   ├── dates/                # Date utilities
-│   │   │   ├── permissions.ts        # Client-side RBAC helpers
-│   │   │   ├── query-keys.ts         # React Query key factory
-│   │   │   └── utils.ts              # General utilities
-│   │   ├── providers/                # React context providers
-│   │   │   ├── auth-provider.tsx     # Auth state restoration
-│   │   │   ├── query-provider.tsx    # React Query provider
-│   │   │   └── theme-provider.tsx    # Theme provider
-│   │   ├── hooks/                    # Custom React hooks
-│   │   ├── types/                    # TypeScript type definitions
-│   │   ├── config/                   # App configuration
-│   │   └── middleware.ts             # Next.js middleware
-│   ├── public/                       # Static assets
-│   ├── package.json                  # Node.js dependencies
-│   ├── tsconfig.json                 # TypeScript config
-│   ├── next.config.ts                # Next.js config
-│   ├── vitest.config.ts              # Test config
-│   ├── Dockerfile                    # Production container
-│   ├── Dockerfile.dev                # Development container
-│   └── vercel.json                   # Vercel deployment config
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── features/
+│   ├── hooks/
+│   ├── lib/
+│   └── types/
 │
-├── docker-compose.yml                # Multi-service orchestration
-├── .env.example                      # Environment variables template
-├── API.md                            # Full API documentation
-├── ARCHITECTURE.md                   # Architecture deep-dive
-└── README.md                         # This file
+├── docker-compose.yml
+├── .env.example
+└── README.md
 ```
 
 ---
 
-## Getting Started
+## 🚀 Running the Project
 
 ### Prerequisites
 
-- Python 3.12+
-- Node.js 20+
-- Docker & Docker Compose (recommended)
-- PostgreSQL 16 (if running without Docker)
-- Redis 7 (if running without Docker)
+Make sure you have:
 
-### Quick Start with Docker
+* Docker
+* Docker Compose
+* Git
+
+installed.
+
+### Clone the repository
 
 ```bash
-# Clone the repository
 git clone <repository-url>
-cd project-management
+cd project-management-platform
+```
 
-# Copy environment file
+### Configure environment variables
+
+Create an environment file based on the provided example:
+
+```bash
 cp .env.example .env
-
-# Start all services
-docker-compose up -d
-
-# The application is now running:
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8000
-# API Docs: http://localhost:8000/docs
 ```
 
-### Manual Setup
+Configure the required values.
 
-#### Backend
+### Start the services
 
 ```bash
-cd backend
-
-# Create virtual environment
-python -m venv .venv
-.\.venv\Scripts\activate  # Windows
-# source .venv/bin/activate  # Linux/macOS
-
-# Install dependencies
-pip install -e ".[dev]"
-
-# Set up environment
-cp .env.example .env
-# Edit .env with your database and Redis credentials
-
-# Run database migrations
-alembic upgrade head
-
-# Start the server
-uvicorn app.main:app --reload --port 8000
+docker compose up --build
 ```
 
-#### Frontend
+After the services start, the application will be available through the configured frontend and backend ports.
 
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Set up environment
-cp .env.example .env.local
-# Edit .env.local with your API URL
-
-# Start development server
-npm run dev
-```
-
-### Environment Variables
-
-| Variable | Description | Default |
-|---|---|---|
-| `ENVIRONMENT` | App environment | `development` |
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://...` |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
-| `JWT_SECRET` | JWT signing secret | (dev default) |
-| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | Access token TTL | `30` |
-| `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token TTL | `7` |
-| `CORS_ORIGINS` | Allowed CORS origins | `["http://localhost:3000"]` |
-| `NEXT_PUBLIC_API_URL` | Backend API URL for frontend | `http://localhost:8000/api/v1` |
-| `NEXT_PUBLIC_WS_URL` | WebSocket URL for frontend | `ws://localhost:8000/api/v1/ws` |
+The FastAPI API documentation is available through the automatically generated Swagger/OpenAPI interface.
 
 ---
 
-## API Reference
+## 📚 API Documentation
 
-All endpoints are versioned under `/api/v1`. Full documentation is available at `http://localhost:8000/docs` (Swagger UI) and in [API.md](./API.md).
+FastAPI automatically provides interactive API documentation.
 
-### Endpoint Summary
+Available documentation:
 
-| Module | Endpoints | Description |
-|---|---|---|
-| **Auth** | `POST /auth/register`, `/login`, `/refresh`, `/logout`, `GET /auth/me` | Authentication & session management |
-| **Users** | `GET/PATCH /users/me`, `GET /users/{id}`, `GET /users` | User profiles & directory |
-| **Projects** | `POST/GET/PATCH/DELETE /projects`, member management | Project CRUD & membership |
-| **Tasks** | `POST/GET/PATCH/DELETE /tasks`, `PATCH /tasks/{id}/reorder` | Task management & Kanban |
-| **Comments** | `POST/GET/PATCH/DELETE /comments` | Task comments |
-| **Labels** | `POST/GET/PATCH/DELETE /labels`, attach/detach | Task labeling system |
-| **Attachments** | `POST/GET/DELETE /attachments`, download | File upload & management |
-| **Search** | `GET /search/tasks`, saved views CRUD | Global search & filters |
-| **Notifications** | `GET/PATCH/DELETE /notifications`, unread count | In-app notifications |
-| **Activity** | `GET /projects/{id}/activity`, `/tasks/{id}/activity` | Audit trail |
-| **WebSocket** | `WS /ws/projects/{id}` | Real-time events & presence |
-| **Health** | `GET /health`, `/health/ready` | Service health checks |
+```text
+/api/docs
+/api/redoc
+```
 
-### RBAC Permission Matrix
-
-| Permission | OWNER | ADMIN | MEMBER | VIEWER |
-|---|---|---|---|---|
-| Project view | Yes | Yes | Yes | Yes |
-| Project edit/delete | Yes | Yes | - | - |
-| Member invite/remove | Yes | Yes | - | - |
-| Role change | Yes | - | - | - |
-| Task create/edit/delete | Yes | Yes | Create/Edit own | - |
-| Comment create | Yes | Yes | Yes | - |
-| Comment delete | Yes | Yes | Own only | - |
+The exact URL depends on the configured backend base URL.
 
 ---
 
-## Testing
+## 🎯 Why I Built This Project
 
-### Backend Tests
+I built this project to move beyond frontend-only development and gain practical experience in **backend engineering with Python**.
 
-```bash
-cd backend
+The project allowed me to work with concepts that are important in real backend development:
 
-# Run all tests
-pytest -v
+* designing APIs
+* modeling relational data
+* implementing authentication
+* handling authorization
+* working with PostgreSQL
+* using ORM patterns
+* implementing caching
+* containerizing applications
+* writing automated tests
+* designing scalable application architecture
+* integrating a frontend with a real backend
 
-# Run with coverage
-pytest --cov=app --cov-report=html
-
-# Run specific test categories
-pytest tests/api/          # API endpoint tests
-pytest tests/unit/         # Unit tests
-pytest tests/integration/  # Integration tests
-```
-
-**Test Coverage:**
-- 15 API test files covering all endpoints
-- 7 unit test files for config, database, models, permissions, RBAC, security, workers
-- Integration tests for database model behavior
-- Rate limiting and security header tests
-- WebSocket connection tests
-
-### Frontend Tests
-
-```bash
-cd frontend
-
-# Run tests
-npm run test
-
-# Run in watch mode
-npm run test:watch
-```
-
-### Code Quality
-
-```bash
-# Backend linting
-cd backend
-ruff check .
-ruff format --check .
-
-# Frontend linting
-cd frontend
-npm run lint
-```
+Rather than building another simple TODO application, I wanted to build a system that demonstrates how multiple backend concepts work together in a realistic product.
 
 ---
 
-## Deployment
+## 🔮 Future Improvements
 
-### Docker Production Build
+Possible future improvements include:
 
-```bash
-# Build and start production containers
-docker-compose -f docker-compose.yml up -d --build
-```
-
-### Vercel (Frontend)
-
-The frontend is configured for Vercel deployment with:
-- `vercel.json` configuration
-- `NEXT_PUBLIC_API_URL` environment variable (required)
-- Standalone output for Docker, native output for Vercel
-
-### Production Checklist
-
-- Change `JWT_SECRET` to a strong random value
-- Set `ENVIRONMENT=production`
-- Configure proper `CORS_ORIGINS`
-- Set up SSL/TLS termination
-- Configure PostgreSQL with connection pooling
-- Set up Redis persistence
-- Configure file upload storage (S3 or equivalent)
-- Set up monitoring and logging aggregation
+* WebSocket-based real-time updates
+* Advanced activity streaming
+* More sophisticated analytics
+* Full-text search
+* Message queues
+* Dedicated notification service
+* Object storage integration
+* CI/CD pipeline
+* Kubernetes deployment
+* Observability and distributed tracing
+* Additional microservices
 
 ---
 
-## Security
+## 👨‍💻 Author
 
-- **JWT Authentication**: Short-lived access tokens (30 min) with rotating refresh tokens (7 days)
-- **Password Hashing**: bcrypt via Passlib
-- **RBAC**: 4-tier role hierarchy with granular permission checks on every endpoint
-- **Rate Limiting**: Per-endpoint throttling (login: 5/min, register: 10/hour, attachments: 15/min)
-- **Security Headers**: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
-- **CORS**: Configurable allowed origins with credential support
-- **Input Validation**: Pydantic v2 schemas on all inputs
-- **SQL Injection Prevention**: SQLAlchemy parameterized queries
-- **File Upload Validation**: Content-type checking, size limits (25MB)
-- **WebSocket Authentication**: JWT verification on connection upgrade
+Built as a full-stack engineering project with a strong focus on **Python backend development, system architecture, API design, and modern frontend engineering**.
 
 ---
 
-## License
+## ⭐ Project Philosophy
 
-This project is for educational and portfolio purposes.
+> Build software that is not only functional, but maintainable, testable, scalable, and pleasant to use.
+
+This project is an ongoing exploration of how a real-world software product can be designed from the API and database layer all the way to the final user experience.
